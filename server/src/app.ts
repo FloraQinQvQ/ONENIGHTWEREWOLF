@@ -10,6 +10,9 @@ const app = express();
 
 const isProd = process.env.NODE_ENV === 'production';
 
+// Render (and most cloud hosts) sit behind a reverse proxy — required for secure cookies + correct IPs
+if (isProd) app.set('trust proxy', 1);
+
 if (!isProd) {
   app.use(cors({
     origin: process.env.CLIENT_URL || 'http://localhost:5173',
