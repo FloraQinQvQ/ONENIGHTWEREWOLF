@@ -1,0 +1,16 @@
+{
+  "name": "one-night-werewolf",
+  "private": true,
+  "workspaces": ["shared", "client", "server"],
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w shared && npm run build -w server && npm run build -w client",
+    "start": "node server/dist/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
