@@ -52,11 +52,41 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
       // Allow reconnect if already a member
       const members = getRoomMembers(room.id);
       if (!members.includes(userId)) { socket.emit('room:error', { message: 'Game already in progress' }); return; }
-      // Reconnect: update socketId in game state
+      // Reconnect: update socketId and push current game state to client
       const game = getGame(code);
       if (game) {
         const ps = game.players.get(userId);
-        if (ps) ps.socketId = socket.id;
+        if (ps) {
+          ps.socketId = socket.id;
+          const otherPlayers = [...game.players.values()]
+            .filter(p => p.userId !== userId)
+            .map(p => ({ userId: p.userId, displayName: p.displayName, avatarUrl: p.avatarUrl, customAvatar: p.customAvatar }));
+          const voteCounts: Record<string, number> = {};
+          for (const p of game.players.values()) {
+            if (p.vote) voteCounts[p.vote] = (voteCounts[p.vote] ?? 0) + 1;
+          }
+          const currentNightRole = game.nightOrder[game.currentNightRoleIndex] ?? null;
+          const werewolfCount = [...game.players.values()].filter(p => p.currentRole === 'werewolf').length;
+          const isActivePlayer = game.phase === 'night' &&
+            currentNightRole === ps.originalRole && !ps.hasActedThisStep;
+          const nightActionRequest = isActivePlayer ? {
+            role: currentNightRole,
+            players: otherPlayers,
+            isLoneWolf: currentNightRole === 'werewolf' && werewolfCount === 1,
+          } : null;
+          socket.emit('game:reconnect', {
+            phase: game.phase,
+            role: ps.originalRole,
+            nightOrder: game.nightOrder,
+            otherPlayers,
+            currentNightRole,
+            nightActionRequest,
+            nightActionResult: ps.nightResult,
+            dayTimerSecondsLeft: game.dayTimerSecondsLeft,
+            voteCounts,
+            myVote: ps.vote,
+          });
+        }
       }
     } else {
       addMember(room.id, userId);
@@ -145,6 +175,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
       settings,
       dayTimerHandle: null,
       nightTimerHandle: null,
+      dayTimerSecondsLeft: 0,
     };
     setGame(code, gameState);
     updateRoomStatus(room.id, 'in_progress');

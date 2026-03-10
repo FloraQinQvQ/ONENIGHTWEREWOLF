@@ -25,6 +25,7 @@ export interface ServerGameState {
   settings: RoomSettings;
   dayTimerHandle: ReturnType<typeof setInterval> | null;
   nightTimerHandle: ReturnType<typeof setTimeout> | null;
+  dayTimerSecondsLeft: number;
 }
 
 const games = new Map<string, ServerGameState>();

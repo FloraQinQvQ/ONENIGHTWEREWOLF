@@ -43,11 +43,13 @@ export function startNightStep(io: Server, roomCode: string) {
     io.to(roomCode).emit('game:night_phase_end', {});
 
     const timerSeconds = state.settings.dayTimerSeconds;
+    state.dayTimerSecondsLeft = timerSeconds;
     io.to(roomCode).emit('game:day_begin', { timerSeconds });
     if (timerSeconds > 0) {
       let secondsLeft = timerSeconds;
       state.dayTimerHandle = setInterval(() => {
         secondsLeft--;
+        state.dayTimerSecondsLeft = secondsLeft;
         io.to(roomCode).emit('game:day_timer', { secondsLeft });
         if (secondsLeft <= 0) {
           clearInterval(state.dayTimerHandle!);
