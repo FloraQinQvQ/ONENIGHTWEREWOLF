@@ -8,6 +8,7 @@ interface Props { request: NightActionRequest; }
 export default function SeerAction({ request }: Props) {
   const [mode, setMode] = useState<'choose' | 'player' | 'center' | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
+  const [pendingPlayer, setPendingPlayer] = useState<string | null>(null);
 
   const submitPlayer = (targetUserId: string) => {
     getSocket().emit('game:night_action', { action: { type: 'seer:view_player', targetUserId } });
@@ -51,19 +52,31 @@ export default function SeerAction({ request }: Props) {
       <div className="text-center max-w-sm w-full">
         <div className="text-4xl mb-3">🔮</div>
         <h2 className="text-lg font-bold text-purple-400 mb-4">Choose a player to view:</h2>
-        <div className="space-y-3">
+        <div className="space-y-3 mb-4">
           {request.players.map(p => (
             <button
               key={p.userId}
-              onClick={() => submitPlayer(p.userId)}
-              className="card w-full flex items-center gap-3 hover:border-purple-500/50 transition-all"
+              onClick={() => setPendingPlayer(p.userId)}
+              className={`card w-full flex items-center gap-3 transition-all ${
+                pendingPlayer === p.userId ? 'border-purple-500 bg-purple-500/10' : 'hover:border-purple-500/50'
+              }`}
             >
               <PlayerAvatar avatarUrl={p.avatarUrl} customAvatar={p.customAvatar} displayName={p.displayName} size={8} />
-              <span>{p.displayName}</span>
+              <span className="flex-1 text-left">{p.displayName}</span>
+              {pendingPlayer === p.userId && <span className="text-purple-400">✓</span>}
             </button>
           ))}
         </div>
-        <button onClick={() => setMode(null)} className="btn-ghost mt-3 w-full">Back</button>
+        <button
+          onClick={() => submitPlayer(pendingPlayer!)}
+          disabled={!pendingPlayer}
+          className="btn-primary w-full mb-2"
+        >
+          {pendingPlayer
+            ? `Confirm — View ${request.players.find(p => p.userId === pendingPlayer)?.displayName}'s card`
+            : 'Select a player'}
+        </button>
+        <button onClick={() => { setMode(null); setPendingPlayer(null); }} className="btn-ghost w-full">Back</button>
       </div>
     );
   }
@@ -87,9 +100,9 @@ export default function SeerAction({ request }: Props) {
         ))}
       </div>
       <button onClick={submitCenter} disabled={selected.length !== 2} className="btn-primary w-full mb-2">
-        Reveal Cards
+        Confirm — Reveal Cards
       </button>
-      <button onClick={() => setMode(null)} className="btn-ghost w-full">Back</button>
+      <button onClick={() => { setMode(null); setSelected([]); }} className="btn-ghost w-full">Back</button>
     </div>
   );
 }

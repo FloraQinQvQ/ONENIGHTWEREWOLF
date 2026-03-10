@@ -5,7 +5,7 @@ import type { NightActionRequest } from 'shared';
 interface Props { request: NightActionRequest; }
 
 export default function WerewolfAction({ request }: Props) {
-  const [centerPeeked, setCenterPeeked] = useState<number | null>(null);
+  const [pendingCenter, setPendingCenter] = useState<number | null>(null);
   const [done, setDone] = useState(false);
 
   const submit = (centerIndex?: number) => {
@@ -36,14 +36,22 @@ export default function WerewolfAction({ request }: Props) {
             {[0, 1, 2].map(i => (
               <button
                 key={i}
-                onClick={() => { setCenterPeeked(i); submit(i); }}
-                className="card hover:border-red-500/50 transition-all py-6"
+                onClick={() => setPendingCenter(i)}
+                className={`card transition-all py-6 ${pendingCenter === i ? 'border-red-500 bg-red-500/10' : 'hover:border-red-500/50'}`}
               >
                 <p className="text-sm text-gray-400">Center {i + 1}</p>
                 <p className="text-2xl">🃏</p>
+                {pendingCenter === i && <p className="text-xs text-red-400 mt-1">✓</p>}
               </button>
             ))}
           </div>
+          <button
+            onClick={() => submit(pendingCenter!)}
+            disabled={pendingCenter === null}
+            className="btn-primary w-full mb-2"
+          >
+            {pendingCenter !== null ? `Confirm — Peek Center ${pendingCenter + 1}` : 'Select a card to peek'}
+          </button>
           <button onClick={() => submit()} className="btn-ghost w-full">
             Skip (don't peek)
           </button>
@@ -59,7 +67,7 @@ export default function WerewolfAction({ request }: Props) {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-400">No other players visible (you see their list via server)</p>
+              <p className="text-gray-400">No other werewolves</p>
             )}
           </div>
           <button onClick={() => submit()} className="btn-primary w-full py-3">

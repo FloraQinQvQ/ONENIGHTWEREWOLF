@@ -31,7 +31,7 @@ export default function GamePage() {
     reset,
   } = useGameStore();
 
-  const { speak, muted, toggleMute } = useNarrator();
+  const { speak, muted, toggleMute, volume, setVolume } = useNarrator();
 
   const setupSocket = useCallback(() => {
     const socket = connectSocket();
@@ -166,13 +166,33 @@ export default function GamePage() {
   };
 
   const MuteButton = (
-    <button
-      onClick={toggleMute}
-      title={muted ? 'Unmute narrator' : 'Mute narrator'}
-      className="fixed bottom-5 right-5 z-50 w-11 h-11 rounded-full bg-night-800 border border-white/10 flex items-center justify-center text-xl hover:bg-night-700 transition-all shadow-lg"
-    >
-      {muted ? '🔇' : '🔊'}
-    </button>
+    <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 bg-night-800 border border-white/10 rounded-full px-3 py-2 shadow-lg">
+      <button
+        onClick={toggleMute}
+        title={muted ? 'Unmute narrator' : 'Mute narrator'}
+        className="text-lg leading-none hover:opacity-70 transition-opacity"
+      >
+        {muted ? '🔇' : volume < 0.4 ? '🔉' : '🔊'}
+      </button>
+      <input
+        type="range"
+        min={0}
+        max={1}
+        step={0.05}
+        value={muted ? 0 : volume}
+        onChange={e => {
+          const v = parseFloat(e.target.value);
+          if (muted && v > 0) toggleMute();
+          if (!muted && v === 0) toggleMute();
+          setVolume(v === 0 ? volume : v);
+        }}
+        className="w-20 accent-moon-500 cursor-pointer"
+        title="Narrator volume"
+      />
+      <span className="text-xs text-gray-400 w-7 text-right tabular-nums">
+        {Math.round((muted ? 0 : volume) * 100)}%
+      </span>
+    </div>
   );
 
   if (phase === 'results') {

@@ -77,18 +77,51 @@ export default function NightPhase({ currentUserId }: Props) {
   );
 }
 
+const SLEEP_OBSERVER_TIP: Partial<Record<string, string>> = {
+  werewolf: 'Listen carefully — any hesitation or whispers may hint at who the Werewolves are.',
+  minion:   'Someone out there secretly serves the Werewolves. They may act strangely during discussion.',
+  mason:    'Two players now know each other are innocent. Masons tend to defend each other boldly.',
+  seer:     'The Seer now knows someone\'s true role. Watch for confident accusations during the day.',
+  robber:   'A card swap just happened! Someone\'s role may now be different from what they think.',
+  troublemaker: 'Two players\' cards were just swapped without them knowing. Chaos incoming!',
+  drunk:    'One player swapped with a center card and has no idea what role they are now.',
+  insomniac: 'The Insomniac is checking if their card changed. They\'ll know their final role.',
+};
+
 function SleepPanel({ role }: { role: string | null }) {
   const info = role ? ROLE_INFO[role as keyof typeof ROLE_INFO] : null;
+  const tip = role ? SLEEP_OBSERVER_TIP[role] : null;
+
   return (
-    <div className="text-center">
-      <div className="text-8xl mb-6 animate-pulse">😴</div>
-      <h2 className="text-2xl font-bold text-gray-300 mb-2">You are sleeping...</h2>
-      {role && info && (
-        <p className="text-gray-500">
-          The <span className="text-moon-400">{info.emoji} {info.name}</span> is awake
-        </p>
+    <div className="w-full max-w-sm">
+      <div className="text-center mb-5">
+        <div className="text-7xl mb-3 animate-pulse">😴</div>
+        <h2 className="text-xl font-bold text-gray-300">Keep your eyes closed...</h2>
+      </div>
+
+      {role && info ? (
+        <div className="card border border-white/10">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-4xl">{info.emoji}</span>
+            <div>
+              <p className="text-xs text-gray-500 font-medium">Now awake</p>
+              <p className={`text-lg font-bold ${info.color}`}>{info.name}</p>
+            </div>
+          </div>
+          <p className="text-sm text-gray-400 mb-3 leading-snug">
+            <span className="text-gray-500 font-medium">What they're doing: </span>
+            {info.nightAction}
+          </p>
+          {tip && (
+            <div className="border-t border-white/5 pt-3">
+              <p className="text-xs text-gray-500 font-medium mb-1">💭 Something to think about</p>
+              <p className="text-xs text-gray-400 leading-snug italic">{tip}</p>
+            </div>
+          )}
+        </div>
+      ) : (
+        <p className="text-center text-gray-600 text-sm">Waiting for night to begin...</p>
       )}
-      <p className="text-gray-600 text-sm mt-4">Keep your eyes closed and wait</p>
     </div>
   );
 }

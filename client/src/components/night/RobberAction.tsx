@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { getSocket } from '../../socket';
 import PlayerAvatar from '../ui/PlayerAvatar';
 import type { NightActionRequest } from 'shared';
@@ -5,6 +6,8 @@ import type { NightActionRequest } from 'shared';
 interface Props { request: NightActionRequest; currentUserId: string; }
 
 export default function RobberAction({ request, currentUserId: _ }: Props) {
+  const [pending, setPending] = useState<string | null>(null);
+
   const steal = (targetUserId: string) => {
     getSocket().emit('game:night_action', { action: { type: 'robber:steal', targetUserId } });
   };
@@ -22,14 +25,26 @@ export default function RobberAction({ request, currentUserId: _ }: Props) {
         {request.players.map(p => (
           <button
             key={p.userId}
-            onClick={() => steal(p.userId)}
-            className="card w-full flex items-center gap-3 hover:border-yellow-500/50 transition-all"
+            onClick={() => setPending(p.userId)}
+            className={`card w-full flex items-center gap-3 transition-all ${
+              pending === p.userId ? 'border-yellow-500 bg-yellow-500/10' : 'hover:border-yellow-500/50'
+            }`}
           >
             <PlayerAvatar avatarUrl={p.avatarUrl} customAvatar={p.customAvatar} displayName={p.displayName} size={8} />
-            <span>Steal from {p.displayName}</span>
+            <span className="flex-1 text-left">Steal from {p.displayName}</span>
+            {pending === p.userId && <span className="text-yellow-400">✓</span>}
           </button>
         ))}
       </div>
+      <button
+        onClick={() => steal(pending!)}
+        disabled={!pending}
+        className="btn-primary w-full mb-2"
+      >
+        {pending
+          ? `Confirm — Steal from ${request.players.find(p => p.userId === pending)?.displayName}`
+          : 'Select a player to steal from'}
+      </button>
       <button onClick={skip} className="btn-ghost w-full">Don't steal</button>
     </div>
   );
