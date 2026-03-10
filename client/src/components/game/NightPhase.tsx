@@ -22,13 +22,6 @@ export default function NightPhase({ currentUserId }: Props) {
 
   return (
     <div className="relative min-h-screen flex flex-col bg-night-950">
-      {/* Current role badge */}
-      {myRole && (
-        <div className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-night-800 border border-white/10 rounded-lg px-3 py-1.5">
-          <span className="text-base">{ROLE_INFO[myRole].emoji}</span>
-          <span className={`text-xs font-semibold ${ROLE_INFO[myRole].color}`}>{ROLE_INFO[myRole].name}</span>
-        </div>
-      )}
       {/* Night order indicator */}
       <div className="p-4 border-b border-white/5">
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
@@ -53,6 +46,23 @@ export default function NightPhase({ currentUserId }: Props) {
           })}
         </div>
       </div>
+
+      {/* My role banner */}
+      {myRole && (
+        <div className={`mx-4 mt-4 flex items-center gap-3 rounded-xl px-4 py-3 border ${
+          ROLE_INFO[myRole].team === 'werewolf'
+            ? 'bg-red-500/10 border-red-500/30'
+            : ROLE_INFO[myRole].team === 'tanner'
+            ? 'bg-gray-500/10 border-gray-500/30'
+            : 'bg-moon-500/10 border-moon-500/30'
+        }`}>
+          <span className="text-4xl">{ROLE_INFO[myRole].emoji}</span>
+          <div>
+            <p className="text-xs text-gray-500 font-medium">Your role</p>
+            <p className={`text-xl font-bold ${ROLE_INFO[myRole].color}`}>{ROLE_INFO[myRole].name}</p>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         {isMyTurn ? (

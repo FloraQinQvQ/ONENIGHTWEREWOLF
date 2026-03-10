@@ -20,6 +20,9 @@ export default function VotingPhase({ currentUserId }: Props) {
   };
 
   const otherPlayers = room?.players.filter(p => p.userId !== currentUserId) ?? [];
+  const votedCount = room?.players.filter(p => p.hasVoted).length ?? 0;
+  const totalCount = room?.players.length ?? 0;
+  const allVoted = votedCount === totalCount && totalCount > 0;
 
   return (
     <div className="min-h-screen flex flex-col p-4 bg-night-950">
@@ -29,6 +32,7 @@ export default function VotingPhase({ currentUserId }: Props) {
         <p className="text-gray-400 text-sm mt-1">
           {hasVoted ? 'Vote submitted. Waiting for others...' : 'Vote for who you think is a Werewolf'}
         </p>
+        <p className="text-gray-500 text-xs mt-2">{votedCount} / {totalCount} voted</p>
       </div>
 
       {!hasVoted ? (
@@ -66,29 +70,32 @@ export default function VotingPhase({ currentUserId }: Props) {
         </>
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center">
-          <div className="text-6xl mb-4">⏳</div>
-          <p className="text-gray-400 text-lg mb-4">
+          <p className="text-gray-400 text-lg mb-6">
             You voted for <span className="text-moon-400 font-bold">
               {room?.players.find(p => p.userId === myVote)?.displayName}
             </span>
           </p>
-          <div className="space-y-2 w-full max-w-sm">
-            {room?.players.filter(p => p.userId !== currentUserId).map(p => (
-              <div key={p.userId} className="flex items-center gap-2">
-                <span className="text-sm text-gray-300 w-32 truncate">{p.displayName}</span>
-                <div className="flex-1 bg-night-700 rounded h-2">
-                  <div
-                    className="bg-moon-500 h-2 rounded transition-all"
-                    style={{ width: `${Math.min((voteCounts[p.userId] ?? 0) / (room?.players.length ?? 1) * 100 * 2, 100)}%` }}
-                  />
+          {allVoted ? (
+            <div className="space-y-2 w-full max-w-sm">
+              {room?.players.map(p => (
+                <div key={p.userId} className="flex items-center gap-2">
+                  <span className="text-sm text-gray-300 w-32 truncate">{p.displayName}</span>
+                  <div className="flex-1 bg-night-700 rounded h-2">
+                    <div
+                      className="bg-moon-500 h-2 rounded transition-all"
+                      style={{ width: `${Math.min((voteCounts[p.userId] ?? 0) / totalCount * 100 * 2, 100)}%` }}
+                    />
+                  </div>
+                  <span className="text-sm text-gray-400 w-6 text-right">{voteCounts[p.userId] ?? 0}</span>
                 </div>
-                <span className="text-sm text-gray-400 w-6 text-right">{voteCounts[p.userId] ?? 0}</span>
-              </div>
-            ))}
-          </div>
-          <p className="mt-6 text-gray-500 text-sm">
-            {room?.players.filter(p => p.hasVoted).length ?? 0} / {room?.players.length ?? 0} voted
-          </p>
+              ))}
+            </div>
+          ) : (
+            <>
+              <div className="text-6xl mb-4 animate-pulse">⏳</div>
+              <p className="text-gray-600 text-sm">Results revealed when everyone votes</p>
+            </>
+          )}
         </div>
       )}
     </div>

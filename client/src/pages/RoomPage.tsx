@@ -191,9 +191,11 @@ export default function RoomPage() {
             className="btn-primary w-full py-4 text-lg"
           >
             {!canStart
-              ? selectedRoles.length !== requiredRoles
+              ? selectedRoles.length < requiredRoles
                 ? `Select ${requiredRoles - selectedRoles.length} more role(s)`
-                : 'Need more players'
+                : selectedRoles.length > requiredRoles
+                  ? `Remove ${selectedRoles.length - requiredRoles} role(s)`
+                  : 'Need more players'
               : 'Start Game'}
           </button>
         )}

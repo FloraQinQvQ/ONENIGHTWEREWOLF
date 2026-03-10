@@ -67,7 +67,7 @@ export default function GamePage() {
 
     socket.on('game:night_phase_end', () => {
       setNightActionRequest(null);
-      setNightActionResult(null);
+      // Keep nightActionResult — DayPhase uses it to show what you did last night
       setCurrentNightRole(null);
     });
 
