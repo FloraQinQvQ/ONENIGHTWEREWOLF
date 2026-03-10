@@ -11,15 +11,7 @@ interface Props {
 export default function RoleSelector({ selected, onChange, required, disabled }: Props) {
   const count = selected.length;
 
-  const toggle = (role: RoleName) => {
-    if (disabled) return;
-    if (multiRoles.includes(role)) return; // handled by +/- buttons
-    if (selected.includes(role)) {
-      onChange(selected.filter(r => r !== role));
-    } else {
-      onChange([...selected, role]);
-    }
-  };
+  const stackableRoles: RoleName[] = ['werewolf', 'mason', 'villager'];
 
   // Count occurrences
   const counts: Record<string, number> = {};
@@ -27,6 +19,8 @@ export default function RoleSelector({ selected, onChange, required, disabled }:
 
   const addOne = (role: RoleName) => {
     if (disabled) return;
+    const max = stackableRoles.includes(role) ? Infinity : 1;
+    if ((counts[role] ?? 0) >= max) return;
     onChange([...selected, role]);
   };
 
@@ -38,52 +32,52 @@ export default function RoleSelector({ selected, onChange, required, disabled }:
     }
   };
 
-  const multiRoles = ['werewolf', 'mason', 'villager'];
-
   return (
     <div>
-      <div className="grid grid-cols-2 gap-2 mb-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
         {ALL_ROLES.map(role => {
           const info = ROLE_INFO[role];
           const roleCount = counts[role] ?? 0;
           const isSelected = roleCount > 0;
           return (
-            <button
+            <div
               key={role}
-              onClick={() => toggle(role)}
-              disabled={disabled}
-              className={`flex items-center gap-2 p-3 rounded-xl border text-left transition-all ${
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all ${
                 isSelected
                   ? 'border-moon-500/60 bg-moon-500/10'
-                  : 'border-white/10 bg-night-700 hover:border-white/30'
-              } ${disabled ? 'cursor-default' : 'cursor-pointer'}`}
+                  : 'border-white/10 bg-night-700'
+              }`}
             >
-              <span className="text-xl">{info.emoji}</span>
-              <div className="flex-1 min-w-0">
-                <p className={`text-sm font-semibold truncate ${isSelected ? info.color : 'text-gray-300'}`}>
+              <span className="text-xl flex-shrink-0">{info.emoji}</span>
+              <div className="flex-1">
+                <p className={`text-sm font-semibold ${isSelected ? info.color : 'text-gray-300'}`}>
                   {info.name}
                 </p>
-                <p className="text-xs text-gray-500 truncate">
+                <p className="text-xs text-gray-500">
                   {info.team === 'village' ? '🌿 Village' : info.team === 'werewolf' ? '🐺 Werewolf' : '💀 Solo'}
                 </p>
               </div>
-              {multiRoles.includes(role) && !disabled ? (
-                <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+              {!disabled && (
+                <div className="flex items-center gap-1 flex-shrink-0">
                   <button
                     onClick={() => removeOne(role)}
                     disabled={roleCount === 0}
-                    className="text-sm text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded w-6 h-6 flex items-center justify-center disabled:opacity-30 disabled:cursor-default"
+                    className="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded w-7 h-7 flex items-center justify-center disabled:opacity-30 disabled:cursor-default text-base"
                   >−</button>
-                  <span className="text-moon-400 font-bold text-sm w-4 text-center">{roleCount || '0'}</span>
+                  <span className={`font-bold text-sm w-5 text-center ${roleCount > 0 ? 'text-moon-400' : 'text-gray-600'}`}>
+                    {roleCount}
+                  </span>
                   <button
                     onClick={() => addOne(role)}
-                    className="text-sm text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded w-6 h-6 flex items-center justify-center"
+                    disabled={!stackableRoles.includes(role) && roleCount >= 1}
+                    className="text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded w-7 h-7 flex items-center justify-center text-base disabled:opacity-30 disabled:cursor-default"
                   >+</button>
                 </div>
-              ) : roleCount > 0 ? (
-                <span className="text-moon-400 font-bold text-sm">×{roleCount}</span>
-              ) : null}
-            </button>
+              )}
+              {disabled && roleCount > 0 && (
+                <span className="text-moon-400 font-bold text-sm flex-shrink-0">×{roleCount}</span>
+              )}
+            </div>
           );
         })}
       </div>

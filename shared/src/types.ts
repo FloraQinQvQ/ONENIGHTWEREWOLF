@@ -19,6 +19,7 @@ export interface PublicPlayer {
   userId: string;
   displayName: string;
   avatarUrl: string | null;
+  customAvatar: string | null;
   isHost: boolean;
   isReady: boolean;
   hasVoted: boolean;
@@ -53,7 +54,7 @@ export type NightAction =
 
 export interface NightActionRequest {
   role: RoleName;
-  players: Array<{ userId: string; displayName: string; avatarUrl: string | null }>;
+  players: Array<{ userId: string; displayName: string; avatarUrl: string | null; customAvatar: string | null }>;
   isLoneWolf?: boolean;
 }
 
@@ -78,5 +79,5 @@ export interface GameResults {
   finalRoles: Record<string, RoleName>;
   originalRoles: Record<string, RoleName>;
   centerCards: [RoleName, RoleName, RoleName];
-  players: Array<{ userId: string; displayName: string; avatarUrl: string | null }>;
+  players: Array<{ userId: string; displayName: string; avatarUrl: string | null; customAvatar: string | null }>;
 }

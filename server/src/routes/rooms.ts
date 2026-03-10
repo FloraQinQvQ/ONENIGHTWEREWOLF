@@ -19,6 +19,7 @@ function buildRoomState(roomId: string, code: string, hostId: string, status: st
       userId: uid,
       displayName: u?.display_name || 'Unknown',
       avatarUrl: u?.avatar_url || null,
+      customAvatar: u?.custom_avatar || null,
       isHost: uid === hostId,
       isReady: false,
       hasVoted: false,

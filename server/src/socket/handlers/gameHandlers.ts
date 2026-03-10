@@ -2,9 +2,33 @@ import type { Server, Socket } from 'socket.io';
 import { getGame, deleteGame } from '../../game/GameManager';
 import { processNightAction, getPlayersForCurrentStep, allCurrentStepActed } from '../../game/NightProcessor';
 import { determineExecuted, evaluateWinConditions } from '../../game/WinCondition';
-import { updateRoomStatus, saveGameResult } from '../../db/rooms';
+import { updateRoomStatus, saveGameResult, getRoomByCode } from '../../db/rooms';
 import { emitRoomState } from './roomHandlers';
 import type { NightAction } from 'shared';
+
+const VALID_ACTION_TYPES = new Set([
+  'werewolf:view', 'minion:view', 'mason:view',
+  'seer:view_player', 'seer:view_center',
+  'robber:steal', 'troublemaker:swap',
+  'drunk:take_center', 'insomniac:view', 'no_action',
+]);
+
+function isValidNightAction(action: unknown): action is NightAction {
+  if (!action || typeof action !== 'object') return false;
+  const a = action as Record<string, unknown>;
+  if (typeof a.type !== 'string' || !VALID_ACTION_TYPES.has(a.type)) return false;
+  // Validate string fields that are passed as user IDs
+  if ('targetUserId' in a && typeof a.targetUserId !== 'string') return false;
+  if ('targetUserIds' in a) {
+    if (!Array.isArray(a.targetUserIds) || a.targetUserIds.length !== 2) return false;
+    if (typeof a.targetUserIds[0] !== 'string' || typeof a.targetUserIds[1] !== 'string') return false;
+  }
+  if ('centerIndex' in a && typeof a.centerIndex !== 'number') return false;
+  if ('centerIndices' in a) {
+    if (!Array.isArray(a.centerIndices) || a.centerIndices.length !== 2) return false;
+  }
+  return true;
+}
 
 export function startNightStep(io: Server, roomCode: string) {
   const state = getGame(roomCode);
@@ -43,6 +67,7 @@ export function startNightStep(io: Server, roomCode: string) {
     userId: p.userId,
     displayName: p.displayName,
     avatarUrl: p.avatarUrl,
+    customAvatar: p.customAvatar,
   }));
 
   const werewolfCount = [...state.players.values()].filter(p => p.currentRole === 'werewolf').length;
@@ -137,7 +162,7 @@ export function registerGameHandlers(io: Server, socket: Socket) {
     }
   });
 
-  socket.on('game:night_action', ({ action }: { action: NightAction }) => {
+  socket.on('game:night_action', ({ action }: { action: unknown }) => {
     const code: string | undefined = socket.data.roomCode;
     if (!code) return;
     const state = getGame(code);
@@ -148,6 +173,8 @@ export function registerGameHandlers(io: Server, socket: Socket) {
 
     const currentRole = state.nightOrder[state.currentNightRoleIndex];
     if (ps.originalRole !== currentRole) return; // Not their turn
+
+    if (!isValidNightAction(action)) return; // Reject malformed payloads
 
     const result = processNightAction(state, userId, action);
     ps.nightResult = result;
@@ -166,15 +193,13 @@ export function registerGameHandlers(io: Server, socket: Socket) {
   });
 
   socket.on('game:skip_day', () => {
-    // Host can skip the day timer
     const code: string | undefined = socket.data.roomCode;
     if (!code) return;
     const state = getGame(code);
     if (!state || state.phase !== 'day') return;
-    const room = state.players.get(userId);
-    if (!room) return;
     // Only host can skip
-    // Check if user is host via room db
+    const room = getRoomByCode(code);
+    if (!room || room.host_id !== userId) return;
     if (state.dayTimerHandle) {
       clearInterval(state.dayTimerHandle);
       state.dayTimerHandle = null;
@@ -182,7 +207,11 @@ export function registerGameHandlers(io: Server, socket: Socket) {
     startVoting(io, code);
   });
 
-  socket.on('game:submit_vote', ({ targetUserId }: { targetUserId: string }) => {
+  socket.on('game:submit_vote', (payload: unknown) => {
+    if (!payload || typeof payload !== 'object') return;
+    const { targetUserId } = payload as Record<string, unknown>;
+    if (typeof targetUserId !== 'string' || !targetUserId) return;
+
     const code: string | undefined = socket.data.roomCode;
     if (!code) return;
     const state = getGame(code);

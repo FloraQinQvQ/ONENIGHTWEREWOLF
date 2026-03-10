@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PlayerAvatar from '../ui/PlayerAvatar';
 import { getSocket } from '../../socket';
 import type { NightActionRequest } from 'shared';
 
@@ -37,10 +38,7 @@ export default function TroublemakerAction({ request, currentUserId: _ }: Props)
             onClick={() => toggle(p.userId)}
             className={`card w-full flex items-center gap-3 transition-all ${selected.includes(p.userId) ? 'border-pink-500 bg-pink-500/10' : 'hover:border-pink-500/50'}`}
           >
-            {p.avatarUrl
-              ? <img src={p.avatarUrl} alt="" className="w-8 h-8 rounded-full" />
-              : <div className="w-8 h-8 rounded-full bg-night-700 flex items-center justify-center">{p.displayName[0]}</div>
-            }
+            <PlayerAvatar avatarUrl={p.avatarUrl} customAvatar={p.customAvatar} displayName={p.displayName} size={8} />
             <span className="flex-1 text-left">{p.displayName}</span>
             {selected.includes(p.userId) && <span className="text-pink-400">✓</span>}
           </button>

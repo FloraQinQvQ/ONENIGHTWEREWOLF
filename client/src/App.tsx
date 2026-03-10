@@ -2,9 +2,11 @@ import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthStore } from './store/authStore';
 import LoginPage from './pages/LoginPage';
+import WelcomePage from './pages/WelcomePage';
 import LobbyPage from './pages/LobbyPage';
 import RoomPage from './pages/RoomPage';
 import GamePage from './pages/GamePage';
+import PrivacyPage from './pages/PrivacyPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuthStore();
@@ -21,6 +23,8 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/welcome" element={<WelcomePage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/" element={<ProtectedRoute><LobbyPage /></ProtectedRoute>} />
         <Route path="/room/:code" element={<ProtectedRoute><RoomPage /></ProtectedRoute>} />
         <Route path="/game/:code" element={<ProtectedRoute><GamePage /></ProtectedRoute>} />

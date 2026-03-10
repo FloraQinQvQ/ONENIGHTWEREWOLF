@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PlayerAvatar from '../ui/PlayerAvatar';
 import { useGameStore } from '../../store/gameStore';
 import { useRoomStore } from '../../store/roomStore';
 import { useAuthStore } from '../../store/authStore';
@@ -113,10 +114,7 @@ export default function DayPhase({ currentUserId }: Props) {
         <div className="space-y-2">
           {room?.players.map(p => (
             <div key={p.userId} className="flex items-center gap-3">
-              {p.avatarUrl
-                ? <img src={p.avatarUrl} alt="" className="w-8 h-8 rounded-full" />
-                : <div className="w-8 h-8 rounded-full bg-night-700 flex items-center justify-center text-sm">{p.displayName[0]}</div>
-              }
+              <PlayerAvatar avatarUrl={p.avatarUrl} customAvatar={p.customAvatar} displayName={p.displayName} size={8} />
               <span className="text-gray-200">{p.displayName}</span>
               {p.userId === currentUserId && <span className="text-xs text-gray-500">(you)</span>}
               {p.isHost && <span className="text-xs text-moon-400">host</span>}

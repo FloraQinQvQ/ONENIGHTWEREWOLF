@@ -1,4 +1,5 @@
 import { getSocket } from '../../socket';
+import PlayerAvatar from '../ui/PlayerAvatar';
 import type { NightActionRequest } from 'shared';
 
 interface Props { request: NightActionRequest; currentUserId: string; }
@@ -24,10 +25,7 @@ export default function RobberAction({ request, currentUserId: _ }: Props) {
             onClick={() => steal(p.userId)}
             className="card w-full flex items-center gap-3 hover:border-yellow-500/50 transition-all"
           >
-            {p.avatarUrl
-              ? <img src={p.avatarUrl} alt="" className="w-8 h-8 rounded-full" />
-              : <div className="w-8 h-8 rounded-full bg-night-700 flex items-center justify-center">{p.displayName[0]}</div>
-            }
+            <PlayerAvatar avatarUrl={p.avatarUrl} customAvatar={p.customAvatar} displayName={p.displayName} size={8} />
             <span>Steal from {p.displayName}</span>
           </button>
         ))}

@@ -4,6 +4,7 @@ export interface PlayerState {
   userId: string;
   displayName: string;
   avatarUrl: string | null;
+  customAvatar: string | null;
   socketId: string;
   originalRole: RoleName;
   currentRole: RoleName;

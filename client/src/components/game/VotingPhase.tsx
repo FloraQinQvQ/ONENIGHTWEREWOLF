@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PlayerAvatar from '../ui/PlayerAvatar';
 import { getSocket } from '../../socket';
 import { useGameStore } from '../../store/gameStore';
 import { useRoomStore } from '../../store/roomStore';
@@ -49,10 +50,7 @@ export default function VotingPhase({ currentUserId }: Props) {
                       : 'border-white/10 bg-night-800 hover:border-white/30'
                   }`}
                 >
-                  {p.avatarUrl
-                    ? <img src={p.avatarUrl} alt="" className="w-10 h-10 rounded-full" />
-                    : <div className="w-10 h-10 rounded-full bg-night-700 flex items-center justify-center font-bold">{p.displayName[0]}</div>
-                  }
+                  <PlayerAvatar avatarUrl={p.avatarUrl} customAvatar={p.customAvatar} displayName={p.displayName} size={10} />
                   <span className="flex-1 text-left font-semibold">{p.displayName}</span>
                   {selected === p.userId && <span className="text-moon-400">✓</span>}
                 </button>

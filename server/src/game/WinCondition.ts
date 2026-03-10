@@ -93,6 +93,6 @@ export function evaluateWinConditions(
     finalRoles: Object.fromEntries(players.map(p => [p.userId, p.currentRole])),
     originalRoles: Object.fromEntries(players.map(p => [p.userId, p.originalRole])),
     centerCards: state.centerCards,
-    players: players.map(p => ({ userId: p.userId, displayName: p.displayName, avatarUrl: p.avatarUrl })),
+    players: players.map(p => ({ userId: p.userId, displayName: p.displayName, avatarUrl: p.avatarUrl, customAvatar: p.customAvatar })),
   };
 }

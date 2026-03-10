@@ -1,4 +1,5 @@
 import { useGameStore } from '../../store/gameStore';
+import PlayerAvatar from '../ui/PlayerAvatar';
 import { ROLE_INFO, teamColor, teamLabel } from '../../utils/roleInfo';
 import type { RoleName } from 'shared';
 
@@ -38,10 +39,7 @@ export default function ResultsCard({ onLeave, currentUserId }: Props) {
             const p = results.players.find(x => x.userId === uid);
             return p ? (
               <div key={uid} className="flex items-center gap-2 mb-1">
-                {p.avatarUrl
-                  ? <img src={p.avatarUrl} alt="" className="w-7 h-7 rounded-full" />
-                  : <div className="w-7 h-7 rounded-full bg-night-700 flex items-center justify-center text-xs">{p.displayName[0]}</div>
-                }
+                <PlayerAvatar avatarUrl={p.avatarUrl} customAvatar={p.customAvatar} displayName={p.displayName} size={7} />
                 <span className="text-gray-200">{p.displayName}</span>
               </div>
             ) : null;
@@ -65,10 +63,7 @@ export default function ResultsCard({ onLeave, currentUserId }: Props) {
             const isMe = p.userId === currentUserId;
             return (
               <div key={p.userId} className={`flex items-start gap-3 p-2 rounded-lg ${isMe ? 'bg-white/5' : ''}`}>
-                {p.avatarUrl
-                  ? <img src={p.avatarUrl} alt="" className="w-8 h-8 rounded-full flex-shrink-0" />
-                  : <div className="w-8 h-8 rounded-full bg-night-700 flex items-center justify-center text-xs flex-shrink-0">{p.displayName[0]}</div>
-                }
+                <PlayerAvatar avatarUrl={p.avatarUrl} customAvatar={p.customAvatar} displayName={p.displayName} size={8} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1">
                     <span className="font-semibold text-sm truncate">{p.displayName}</span>

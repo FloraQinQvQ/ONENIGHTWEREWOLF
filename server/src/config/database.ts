@@ -64,5 +64,12 @@ export function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS idx_sessions_expired ON sessions(expired_at);
   `);
 
+  // Safe migrations for new columns (SQLite doesn't support IF NOT EXISTS on ALTER)
+  const userCols = (db.prepare("PRAGMA table_info(users)").all() as { name: string }[]).map(c => c.name);
+  if (!userCols.includes('custom_avatar'))
+    db.exec("ALTER TABLE users ADD COLUMN custom_avatar TEXT");
+  if (!userCols.includes('profile_setup_done'))
+    db.exec("ALTER TABLE users ADD COLUMN profile_setup_done INTEGER NOT NULL DEFAULT 0");
+
   console.log('Database initialized at', dbPath);
 }

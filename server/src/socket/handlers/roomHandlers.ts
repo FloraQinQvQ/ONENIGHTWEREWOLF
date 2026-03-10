@@ -15,6 +15,7 @@ function buildPublicPlayers(roomId: string, hostId: string, game?: ReturnType<ty
       userId: uid,
       displayName: u?.display_name || 'Unknown',
       avatarUrl: u?.avatar_url || null,
+      customAvatar: u?.custom_avatar || null,
       isHost: uid === hostId,
       isReady: gs?.isReady ?? false,
       hasVoted: gs ? gs.vote !== null : false,
@@ -122,6 +123,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
         userId: uid,
         displayName: u.display_name,
         avatarUrl: u.avatar_url,
+        customAvatar: u.custom_avatar,
         socketId: sockets[0]?.id || '',
         originalRole: playerRoles.get(uid)!,
         currentRole: playerRoles.get(uid)!,
@@ -155,7 +157,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
           role: ps.originalRole,
           otherPlayers: memberIds.filter(id => id !== uid).map(id => {
             const u = getUserById(id);
-            return { userId: id, displayName: u?.display_name || 'Unknown', avatarUrl: u?.avatar_url || null };
+            return { userId: id, displayName: u?.display_name || 'Unknown', avatarUrl: u?.avatar_url || null, customAvatar: u?.custom_avatar || null };
           }),
         });
       }

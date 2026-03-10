@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import PlayerAvatar from '../ui/PlayerAvatar';
 import { getSocket } from '../../socket';
 import type { NightActionRequest } from 'shared';
 
@@ -57,10 +58,7 @@ export default function SeerAction({ request }: Props) {
               onClick={() => submitPlayer(p.userId)}
               className="card w-full flex items-center gap-3 hover:border-purple-500/50 transition-all"
             >
-              {p.avatarUrl
-                ? <img src={p.avatarUrl} alt="" className="w-8 h-8 rounded-full" />
-                : <div className="w-8 h-8 rounded-full bg-night-700 flex items-center justify-center">{p.displayName[0]}</div>
-              }
+              <PlayerAvatar avatarUrl={p.avatarUrl} customAvatar={p.customAvatar} displayName={p.displayName} size={8} />
               <span>{p.displayName}</span>
             </button>
           ))}
