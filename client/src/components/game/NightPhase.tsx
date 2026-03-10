@@ -1,5 +1,7 @@
 import { useGameStore } from '../../store/gameStore';
+import { useRoomStore } from '../../store/roomStore';
 import { ROLE_INFO } from '../../utils/roleInfo';
+import type { RoleName } from 'shared';
 import WerewolfAction from '../night/WerewolfAction';
 import MinionAction from '../night/MinionAction';
 import MasonAction from '../night/MasonAction';
@@ -10,12 +12,29 @@ import DrunkAction from '../night/DrunkAction';
 import InsomniacAction from '../night/InsomniacAction';
 import NoAction from '../night/NoAction';
 
+const NIGHT_ORDER: RoleName[] = ['werewolf', 'minion', 'mason', 'seer', 'robber', 'troublemaker', 'drunk', 'insomniac'];
+
 interface Props {
   currentUserId: string;
 }
 
 export default function NightPhase({ currentUserId }: Props) {
-  const { nightOrder, currentNightRole, nightActionRequest, nightActionResult, myRole } = useGameStore();
+  const { currentNightRole, nightActionRequest, nightActionResult, myRole } = useGameStore();
+  const { room } = useRoomStore();
+
+  // Show ALL configured roles (including center cards) sorted by night order
+  // so sleeping players can't deduce which roles are in center cards
+  const allConfiguredRoles = [...new Set(room?.settings.roles ?? [])] as RoleName[];
+  const displayOrder = [...allConfiguredRoles].sort((a, b) => {
+    const ai = NIGHT_ORDER.indexOf(a);
+    const bi = NIGHT_ORDER.indexOf(b);
+    if (ai === -1 && bi === -1) return 0;
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  }).filter(r => NIGHT_ORDER.includes(r)); // only show roles with night actions
+
+  const currentIndex = currentNightRole ? displayOrder.indexOf(currentNightRole) : -1;
 
   const isMyTurn = nightActionRequest !== null;
   const justActed = nightActionResult !== null && !isMyTurn;
@@ -25,11 +44,9 @@ export default function NightPhase({ currentUserId }: Props) {
       {/* Night order indicator */}
       <div className="p-4 border-b border-white/5">
         <div className="flex items-center gap-2 overflow-x-auto pb-1">
-          {nightOrder.map((role, i) => {
+          {displayOrder.map((role, i) => {
             const info = ROLE_INFO[role];
-            const isPast = currentNightRole
-              ? nightOrder.indexOf(currentNightRole) > i
-              : false;
+            const isPast = currentIndex !== -1 && i < currentIndex;
             const isCurrent = role === currentNightRole;
             return (
               <div
