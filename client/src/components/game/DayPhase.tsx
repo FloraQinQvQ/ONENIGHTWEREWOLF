@@ -2,7 +2,6 @@ import { useState } from 'react';
 import PlayerAvatar from '../ui/PlayerAvatar';
 import { useGameStore } from '../../store/gameStore';
 import { useRoomStore } from '../../store/roomStore';
-import { useAuthStore } from '../../store/authStore';
 import { getSocket } from '../../socket';
 import { ROLE_INFO } from '../../utils/roleInfo';
 import type { NightActionResult, RoleName } from 'shared';
@@ -13,14 +12,25 @@ interface Props {
 }
 
 export default function DayPhase({ currentUserId }: Props) {
-  const { dayTimerSeconds, myRole, nightActionResult, nightOrder, notes, setNotes, playerNotes, setPlayerNote, playerTags, setPlayerTrust, togglePlayerRole } = useGameStore();
+  const { dayTimerSeconds, myRole, nightActionResult, notes, setNotes, playerNotes, setPlayerNote, playerTags, setPlayerTrust, togglePlayerRole } = useGameStore();
   const { room } = useRoomStore();
-  const { user } = useAuthStore();
   const isHost = room?.hostId === currentUserId;
   const [showRules, setShowRules] = useState(false);
 
-  // Unique roles in this game
+  // Unique roles in this game (includes center card roles — intentionally shows all)
   const gameRoles = [...new Set(room?.settings.roles ?? [])] as RoleName[];
+
+  // All roles sorted by standard night wake-up order (used for display only)
+  const NIGHT_ORDER: RoleName[] = ['werewolf', 'minion', 'mason', 'seer', 'robber', 'troublemaker', 'drunk', 'insomniac'];
+  const nightSequence = [...gameRoles].sort((a, b) => {
+    const ai = NIGHT_ORDER.indexOf(a);
+    const bi = NIGHT_ORDER.indexOf(b);
+    // Roles with no night action go to the end
+    if (ai === -1 && bi === -1) return 0;
+    if (ai === -1) return 1;
+    if (bi === -1) return -1;
+    return ai - bi;
+  });
 
   return (
     <div className="min-h-screen flex flex-col p-4 bg-night-950">
@@ -38,7 +48,7 @@ export default function DayPhase({ currentUserId }: Props) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-        {/* Left column: main content */}
+        {/* Left column: game info */}
         <div className="flex flex-col gap-4">
           {myRole && (
             <div className={`card border ${
@@ -76,15 +86,15 @@ export default function DayPhase({ currentUserId }: Props) {
                 <div>
                   <p className="text-xs text-gray-500 font-medium mb-2">Night wake-up order</p>
                   <div className="flex items-center gap-1 flex-wrap">
-                    {nightOrder.map((role, i) => {
+                    {nightSequence.map((role, i) => {
                       const info = ROLE_INFO[role];
                       return (
-                        <div key={i} className="flex items-center gap-1">
+                        <div key={`${role}-${i}`} className="flex items-center gap-1">
                           <span className="text-xs bg-night-700 rounded px-1.5 py-0.5 flex items-center gap-1">
                             <span>{info.emoji}</span>
                             <span className={`${info.color} font-medium`}>{info.name}</span>
                           </span>
-                          {i < nightOrder.length - 1 && <span className="text-gray-700 text-xs">→</span>}
+                          {i < nightSequence.length - 1 && <span className="text-gray-700 text-xs">→</span>}
                         </div>
                       );
                     })}
@@ -99,7 +109,6 @@ export default function DayPhase({ currentUserId }: Props) {
                         <div>
                           <p className={`font-semibold text-sm ${info.color}`}>{info.name}</p>
                           <p className="text-xs text-gray-400 leading-snug">{info.description}</p>
-                          <p className="text-xs text-gray-600 mt-0.5 italic">{info.nightAction}</p>
                         </div>
                       </div>
                     );
@@ -107,86 +116,6 @@ export default function DayPhase({ currentUserId }: Props) {
                 </div>
               </div>
             )}
-          </div>
-
-          <div className="card">
-            <h3 className="font-bold mb-3">Players</h3>
-            <div className="space-y-3">
-              {room?.players.map(p => (
-                <div key={p.userId} className="flex items-center gap-2">
-                  <PlayerAvatar avatarUrl={p.avatarUrl} customAvatar={p.customAvatar} displayName={p.displayName} size={8} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-gray-200 text-sm">{p.displayName}</span>
-                      {p.userId === currentUserId && <span className="text-xs text-gray-600">(you)</span>}
-                      {p.isHost && <span className="text-xs text-moon-400">host</span>}
-                    </div>
-                    {p.userId !== currentUserId && (
-                      <div className="mt-1 space-y-1.5">
-                        <input
-                          type="text"
-                          value={playerNotes[p.userId] ?? ''}
-                          onChange={e => setPlayerNote(p.userId, e.target.value)}
-                          placeholder="your read on them..."
-                          maxLength={60}
-                          className="w-full bg-night-700 border border-white/5 rounded px-2 py-0.5 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-moon-500/40"
-                        />
-                        {/* Trust + suspected roles */}
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {/* Two explicit trust buttons */}
-                          {(() => {
-                            const trust = playerTags[p.userId]?.trust ?? null;
-                            return (
-                              <>
-                                <button
-                                  onClick={() => setPlayerTrust(p.userId, trust === 'good' ? null : 'good')}
-                                  title="Trust"
-                                  className={`text-xs px-1.5 py-0.5 rounded border transition-all ${
-                                    trust === 'good'
-                                      ? 'bg-green-500/20 text-green-400 border-green-500/40'
-                                      : 'text-gray-600 border-white/5 hover:text-green-400 hover:border-green-500/30'
-                                  }`}
-                                >
-                                  👍 trust
-                                </button>
-                                <button
-                                  onClick={() => setPlayerTrust(p.userId, trust === 'bad' ? null : 'bad')}
-                                  title="Suspicious"
-                                  className={`text-xs px-1.5 py-0.5 rounded border transition-all ${
-                                    trust === 'bad'
-                                      ? 'bg-red-500/20 text-red-400 border-red-500/40'
-                                      : 'text-gray-600 border-white/5 hover:text-red-400 hover:border-red-500/30'
-                                  }`}
-                                >
-                                  🚩 sus
-                                </button>
-                              </>
-                            );
-                          })()}
-                          {/* Role chips */}
-                          {gameRoles.map(role => {
-                            const info = ROLE_INFO[role];
-                            const active = playerTags[p.userId]?.roles.includes(role) ?? false;
-                            return (
-                              <button
-                                key={role}
-                                onClick={() => togglePlayerRole(p.userId, role)}
-                                title={info.name}
-                                className={`text-sm leading-none p-0.5 rounded transition-all ${
-                                  active ? 'opacity-100 ring-1 ring-white/30 bg-white/10' : 'opacity-30 hover:opacity-60'
-                                }`}
-                              >
-                                {info.emoji}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
 
           <div className="card bg-yellow-500/5 border-yellow-500/20">
@@ -198,16 +127,28 @@ export default function DayPhase({ currentUserId }: Props) {
             </ul>
           </div>
 
-          {/* Notepad shown below on mobile only */}
-          <div className="card md:hidden">
-            <p className="text-xs text-gray-500 font-medium mb-2">📝 Your Notepad <span className="text-gray-600">(private)</span></p>
-            <textarea
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="Jot down your suspicions, claims you heard, anything useful..."
-              rows={5}
-              className="w-full bg-night-700 border border-white/10 rounded-lg p-3 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-moon-500/50"
+          {/* Players + notepad on mobile */}
+          <div className="md:hidden flex flex-col gap-4">
+            <PlayerNotesCard
+              players={room?.players ?? []}
+              currentUserId={currentUserId}
+              playerNotes={playerNotes}
+              setPlayerNote={setPlayerNote}
+              playerTags={playerTags}
+              setPlayerTrust={setPlayerTrust}
+              togglePlayerRole={togglePlayerRole}
+              gameRoles={gameRoles}
             />
+            <div className="card">
+              <p className="text-xs text-gray-500 font-medium mb-2">📝 Your Notepad <span className="text-gray-600">(private)</span></p>
+              <textarea
+                value={notes}
+                onChange={e => setNotes(e.target.value)}
+                placeholder="Jot down your suspicions, claims you heard, anything useful..."
+                rows={5}
+                className="w-full bg-night-700 border border-white/10 rounded-lg p-3 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-moon-500/50"
+              />
+            </div>
           </div>
 
           {isHost && (
@@ -220,19 +161,113 @@ export default function DayPhase({ currentUserId }: Props) {
           )}
         </div>
 
-        {/* Right column: notepad (desktop only) */}
-        <div className="hidden md:flex flex-col gap-2 sticky top-4">
+        {/* Right column: players + notepad (desktop only) */}
+        <div className="hidden md:flex flex-col gap-4 sticky top-4">
+          <PlayerNotesCard
+            players={room?.players ?? []}
+            currentUserId={currentUserId}
+            playerNotes={playerNotes}
+            setPlayerNote={setPlayerNote}
+            playerTags={playerTags}
+            setPlayerTrust={setPlayerTrust}
+            togglePlayerRole={togglePlayerRole}
+            gameRoles={gameRoles}
+          />
           <div className="card">
             <p className="text-xs text-gray-500 font-medium mb-2">📝 Your Notepad <span className="text-gray-600">(private — only you can see this)</span></p>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
               placeholder="Jot down your suspicions, claims you heard, anything useful..."
-              rows={12}
+              rows={8}
               className="w-full bg-night-700 border border-white/10 rounded-lg p-3 text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-moon-500/50"
             />
           </div>
         </div>
+      </div>
+    </div>
+  );
+}
+
+interface PlayerNotesCardProps {
+  players: Array<{ userId: string; displayName: string; avatarUrl: string | null; customAvatar?: string | null | undefined; isHost?: boolean }>;
+  currentUserId: string;
+  playerNotes: Record<string, string>;
+  setPlayerNote: (userId: string, note: string) => void;
+  playerTags: Record<string, { trust: 'good' | 'bad' | null; roles: RoleName[] }>;
+  setPlayerTrust: (userId: string, trust: 'good' | 'bad' | null) => void;
+  togglePlayerRole: (userId: string, role: RoleName) => void;
+  gameRoles: RoleName[];
+}
+
+function PlayerNotesCard({ players, currentUserId, playerNotes, setPlayerNote, playerTags, setPlayerTrust, togglePlayerRole, gameRoles }: PlayerNotesCardProps) {
+  return (
+    <div className="card">
+      <h3 className="font-bold mb-3">Players</h3>
+      <div className="space-y-3">
+        {players.map(p => (
+          <div key={p.userId} className="flex items-start gap-2">
+            <PlayerAvatar avatarUrl={p.avatarUrl} customAvatar={p.customAvatar ?? null} displayName={p.displayName} size={8} />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="text-gray-200 text-sm">{p.displayName}</span>
+                {p.userId === currentUserId && <span className="text-xs text-gray-600">(you)</span>}
+                {p.isHost && <span className="text-xs text-moon-400">host</span>}
+              </div>
+              {p.userId !== currentUserId && (
+                <div className="mt-1 space-y-1.5">
+                  <input
+                    type="text"
+                    value={playerNotes[p.userId] ?? ''}
+                    onChange={e => setPlayerNote(p.userId, e.target.value)}
+                    placeholder="your read on them..."
+                    maxLength={60}
+                    className="w-full bg-night-700 border border-white/5 rounded px-2 py-0.5 text-xs text-gray-300 placeholder-gray-600 focus:outline-none focus:border-moon-500/40"
+                  />
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {(() => {
+                      const trust = playerTags[p.userId]?.trust ?? null;
+                      return (
+                        <>
+                          <button
+                            onClick={() => setPlayerTrust(p.userId, trust === 'good' ? null : 'good')}
+                            className={`text-xs px-1.5 py-0.5 rounded border transition-all ${
+                              trust === 'good'
+                                ? 'bg-green-500/20 text-green-400 border-green-500/40'
+                                : 'text-gray-600 border-white/5 hover:text-green-400 hover:border-green-500/30'
+                            }`}
+                          >👍 trust</button>
+                          <button
+                            onClick={() => setPlayerTrust(p.userId, trust === 'bad' ? null : 'bad')}
+                            className={`text-xs px-1.5 py-0.5 rounded border transition-all ${
+                              trust === 'bad'
+                                ? 'bg-red-500/20 text-red-400 border-red-500/40'
+                                : 'text-gray-600 border-white/5 hover:text-red-400 hover:border-red-500/30'
+                            }`}
+                          >🚩 sus</button>
+                        </>
+                      );
+                    })()}
+                    {gameRoles.map(role => {
+                      const info = ROLE_INFO[role];
+                      const active = playerTags[p.userId]?.roles.includes(role) ?? false;
+                      return (
+                        <button
+                          key={role}
+                          onClick={() => togglePlayerRole(p.userId, role)}
+                          title={info.name}
+                          className={`text-sm leading-none p-0.5 rounded transition-all ${
+                            active ? 'opacity-100 ring-1 ring-white/30 bg-white/10' : 'opacity-30 hover:opacity-60'
+                          }`}
+                        >{info.emoji}</button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
