@@ -106,8 +106,8 @@ function endGame(io: Server, roomCode: string) {
   const executed = determineExecuted(state);
   const results = evaluateWinConditions(state, executed);
 
-  updateRoomStatus(state.roomId, 'finished');
   saveGameResult(state.roomId, { winTeam: results.winTeam, winners: results.winners }, results);
+  updateRoomStatus(state.roomId, 'waiting'); // Reset room for next game
 
   io.to(roomCode).emit('game:results', results);
   deleteGame(roomCode);

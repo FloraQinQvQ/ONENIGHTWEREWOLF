@@ -13,6 +13,7 @@ export default function RoleSelector({ selected, onChange, required, disabled }:
 
   const toggle = (role: RoleName) => {
     if (disabled) return;
+    if (multiRoles.includes(role)) return; // handled by +/- buttons
     if (selected.includes(role)) {
       onChange(selected.filter(r => r !== role));
     } else {
@@ -24,10 +25,20 @@ export default function RoleSelector({ selected, onChange, required, disabled }:
   const counts: Record<string, number> = {};
   for (const r of selected) counts[r] = (counts[r] ?? 0) + 1;
 
-  const addExtra = (role: RoleName) => {
+  const addOne = (role: RoleName) => {
     if (disabled) return;
     onChange([...selected, role]);
   };
+
+  const removeOne = (role: RoleName) => {
+    if (disabled) return;
+    const lastIdx = selected.lastIndexOf(role);
+    if (lastIdx !== -1) {
+      onChange([...selected.slice(0, lastIdx), ...selected.slice(lastIdx + 1)]);
+    }
+  };
+
+  const multiRoles = ['werewolf', 'mason', 'villager'];
 
   return (
     <div>
@@ -56,17 +67,22 @@ export default function RoleSelector({ selected, onChange, required, disabled }:
                   {info.team === 'village' ? '🌿 Village' : info.team === 'werewolf' ? '🐺 Werewolf' : '💀 Solo'}
                 </p>
               </div>
-              {roleCount > 0 && (
-                <div className="flex flex-col items-center gap-1">
-                  <span className="text-moon-400 font-bold text-sm">×{roleCount}</span>
-                  {!disabled && ['werewolf', 'mason', 'villager'].includes(role) && (
-                    <button
-                      onClick={e => { e.stopPropagation(); addExtra(role); }}
-                      className="text-xs text-gray-500 hover:text-white bg-white/5 rounded px-1"
-                    >+</button>
-                  )}
+              {multiRoles.includes(role) && !disabled ? (
+                <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                  <button
+                    onClick={() => removeOne(role)}
+                    disabled={roleCount === 0}
+                    className="text-sm text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded w-6 h-6 flex items-center justify-center disabled:opacity-30 disabled:cursor-default"
+                  >−</button>
+                  <span className="text-moon-400 font-bold text-sm w-4 text-center">{roleCount || '0'}</span>
+                  <button
+                    onClick={() => addOne(role)}
+                    className="text-sm text-gray-400 hover:text-white bg-white/5 hover:bg-white/10 rounded w-6 h-6 flex items-center justify-center"
+                  >+</button>
                 </div>
-              )}
+              ) : roleCount > 0 ? (
+                <span className="text-moon-400 font-bold text-sm">×{roleCount}</span>
+              ) : null}
             </button>
           );
         })}

@@ -127,7 +127,7 @@ export default function ResultsCard({ onLeave, currentUserId }: Props) {
       </div>
 
       <button onClick={onLeave} className="btn-primary w-full py-4 text-lg">
-        Back to Lobby
+        Play Again
       </button>
     </div>
   );

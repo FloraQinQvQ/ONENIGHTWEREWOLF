@@ -103,7 +103,8 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
     const memberIds = getRoomMembers(room.id);
     const playerCount = memberIds.length;
 
-    if (playerCount < 1) { socket.emit('room:error', { message: 'Need at least 1 player' }); return; }
+    const minPlayers = process.env.NODE_ENV === 'production' ? 4 : 1;
+    if (playerCount < minPlayers) { socket.emit('room:error', { message: `Need at least ${minPlayers} players to start` }); return; }
     if (settings.roles.length !== playerCount + 3) {
       socket.emit('room:error', { message: `Select exactly ${playerCount + 3} roles (${playerCount} players + 3 center cards)` });
       return;

@@ -35,7 +35,6 @@ export default function VotingPhase({ currentUserId }: Props) {
         <>
           <div className="space-y-3 mb-6">
             {otherPlayers.map(p => {
-              const votes = voteCounts[p.userId] ?? 0;
               return (
                 <button
                   key={p.userId}
@@ -51,9 +50,6 @@ export default function VotingPhase({ currentUserId }: Props) {
                     : <div className="w-10 h-10 rounded-full bg-night-700 flex items-center justify-center font-bold">{p.displayName[0]}</div>
                   }
                   <span className="flex-1 text-left font-semibold">{p.displayName}</span>
-                  {votes > 0 && (
-                    <span className="text-sm text-gray-400">{votes} vote{votes !== 1 ? 's' : ''}</span>
-                  )}
                   {selected === p.userId && <span className="text-moon-400">✓</span>}
                 </button>
               );

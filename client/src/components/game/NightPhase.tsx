@@ -21,7 +21,14 @@ export default function NightPhase({ currentUserId }: Props) {
   const justActed = nightActionResult !== null && !isMyTurn;
 
   return (
-    <div className="min-h-screen flex flex-col bg-night-950">
+    <div className="relative min-h-screen flex flex-col bg-night-950">
+      {/* Current role badge */}
+      {myRole && (
+        <div className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-night-800 border border-white/10 rounded-lg px-3 py-1.5">
+          <span className="text-base">{ROLE_INFO[myRole].emoji}</span>
+          <span className={`text-xs font-semibold ${ROLE_INFO[myRole].color}`}>{ROLE_INFO[myRole].name}</span>
+        </div>
+      )}
       {/* Night order indicator */}
       <div className="p-4 border-b border-white/5">
         <div className="flex items-center gap-2 overflow-x-auto pb-1">

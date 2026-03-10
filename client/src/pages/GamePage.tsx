@@ -15,7 +15,7 @@ export default function GamePage() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { setRoom } = useRoomStore();
+  const { setRoom, room } = useRoomStore();
   const {
     phase, setPhase,
     myRole, setMyRole,
@@ -118,9 +118,8 @@ export default function GamePage() {
   }, [setupSocket]);
 
   const handleLeave = () => {
-    getSocket().emit('room:leave');
     reset();
-    navigate('/');
+    navigate(`/room/${code}`);
   };
 
   if (phase === 'results') {
@@ -128,10 +127,14 @@ export default function GamePage() {
   }
 
   if (phase === 'role_reveal') {
+    const readyCount = room?.players.filter(p => p.isReady).length ?? 0;
+    const totalCount = room?.players.length ?? 0;
     return (
       <RoleCard
         role={myRole!}
         onReady={() => getSocket().emit('game:player_ready')}
+        readyCount={readyCount}
+        totalCount={totalCount}
       />
     );
   }

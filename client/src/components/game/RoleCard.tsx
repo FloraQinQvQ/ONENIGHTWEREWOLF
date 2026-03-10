@@ -5,9 +5,11 @@ import { ROLE_INFO } from '../../utils/roleInfo';
 interface Props {
   role: RoleName;
   onReady: () => void;
+  readyCount: number;
+  totalCount: number;
 }
 
-export default function RoleCard({ role, onReady }: Props) {
+export default function RoleCard({ role, onReady, readyCount, totalCount }: Props) {
   const [revealed, setRevealed] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const info = ROLE_INFO[role];
@@ -78,7 +80,7 @@ export default function RoleCard({ role, onReady }: Props) {
       {confirmed && (
         <div className="mt-8 text-center">
           <div className="text-green-400 text-lg font-semibold">✓ Ready!</div>
-          <p className="text-gray-500 text-sm mt-1">Waiting for other players...</p>
+          <p className="text-gray-500 text-sm mt-1">Waiting for other players... ({readyCount}/{totalCount})</p>
         </div>
       )}
 

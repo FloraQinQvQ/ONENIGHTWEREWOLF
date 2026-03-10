@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getSocket, connectSocket } from '../socket';
 import { useAuthStore } from '../store/authStore';
@@ -6,12 +6,25 @@ import { useRoomStore } from '../store/roomStore';
 import { useGameStore } from '../store/gameStore';
 import RoleSelector from '../components/room/RoleSelector';
 import PlayerList from '../components/room/PlayerList';
-import type { RoomState } from 'shared';
+import type { RoomState, RoleName } from 'shared';
+
+const MIN_PLAYERS = import.meta.env.PROD ? 4 : 1;
+
+const ROLE_PRESETS: Record<number, RoleName[]> = {
+  4:  ['werewolf', 'werewolf', 'seer', 'robber', 'troublemaker', 'villager', 'villager'],
+  5:  ['werewolf', 'werewolf', 'seer', 'robber', 'troublemaker', 'drunk', 'villager', 'villager'],
+  6:  ['werewolf', 'werewolf', 'seer', 'robber', 'troublemaker', 'drunk', 'insomniac', 'villager', 'villager'],
+  7:  ['werewolf', 'werewolf', 'minion', 'seer', 'robber', 'troublemaker', 'drunk', 'insomniac', 'hunter', 'villager'],
+  8:  ['werewolf', 'werewolf', 'minion', 'mason', 'mason', 'seer', 'robber', 'troublemaker', 'drunk', 'insomniac', 'hunter'],
+  9:  ['werewolf', 'werewolf', 'minion', 'mason', 'mason', 'seer', 'robber', 'troublemaker', 'drunk', 'insomniac', 'hunter', 'tanner'],
+  10: ['werewolf', 'werewolf', 'minion', 'mason', 'mason', 'seer', 'robber', 'troublemaker', 'drunk', 'insomniac', 'hunter', 'tanner', 'villager'],
+};
 
 export default function RoomPage() {
   const { code } = useParams<{ code: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const [copied, setCopied] = useState(false);
   const { room, error, setRoom, setError } = useRoomStore();
   const { setPhase, setNightOrder, setMyRole } = useGameStore();
 
@@ -53,7 +66,18 @@ export default function RoomPage() {
   const playerCount = room?.players.length ?? 0;
   const requiredRoles = playerCount + 3;
   const selectedRoles = room?.settings.roles ?? [];
-  const canStart = isHost && playerCount >= 1 && selectedRoles.length === requiredRoles;
+  const canStart = isHost && playerCount >= MIN_PLAYERS && selectedRoles.length === requiredRoles;
+
+  const copyUrl = () => {
+    navigator.clipboard.writeText(window.location.href);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const suggestRoles = () => {
+    const preset = ROLE_PRESETS[Math.min(Math.max(playerCount, 4), 10)];
+    if (preset) updateSettings(preset);
+  };
 
   const startGame = () => {
     getSocket().emit('room:start_game');
@@ -87,6 +111,12 @@ export default function RoomPage() {
         <div className="text-center">
           <p className="text-sm text-gray-500">Room Code</p>
           <p className="text-2xl font-mono font-bold text-moon-400 tracking-widest">{room.code}</p>
+          <button
+            onClick={copyUrl}
+            className="text-xs text-gray-500 hover:text-gray-300 mt-1 transition-colors"
+          >
+            {copied ? '✓ Copied!' : '🔗 Copy invite link'}
+          </button>
         </div>
         <div className="w-16" />
       </header>
@@ -95,8 +125,8 @@ export default function RoomPage() {
         <div className="card">
           <h2 className="font-bold text-lg mb-3">Players ({playerCount}/10)</h2>
           <PlayerList players={room.players} currentUserId={user?.userId || ''} />
-          {playerCount < 1 && (
-            <p className="mt-3 text-sm text-yellow-500">Need at least 1 player to start</p>
+          {playerCount < MIN_PLAYERS && (
+            <p className="mt-3 text-sm text-yellow-500">Need at least {MIN_PLAYERS} players to start</p>
           )}
         </div>
 
@@ -131,7 +161,17 @@ export default function RoomPage() {
         </div>
 
         <div className="card">
-          <h2 className="font-bold text-lg mb-1">Role Setup</h2>
+          <div className="flex items-center justify-between mb-1">
+            <h2 className="font-bold text-lg">Role Setup</h2>
+            {isHost && (
+              <button
+                onClick={suggestRoles}
+                className="text-xs text-moon-400 hover:text-moon-300 border border-moon-500/40 hover:border-moon-400/60 rounded-lg px-2 py-1 transition-colors"
+              >
+                ✨ Suggest
+              </button>
+            )}
+          </div>
           <p className="text-sm text-gray-400 mb-3">
             Select exactly <span className="text-moon-400 font-bold">{requiredRoles}</span> roles
             ({playerCount} players + 3 center cards)
