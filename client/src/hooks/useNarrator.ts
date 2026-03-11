@@ -1,9 +1,10 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useLangStore } from '../store/langStore';
 
 const STORAGE_KEY_MUTED = 'narrator_muted';
 const STORAGE_KEY_VOLUME = 'narrator_volume';
 
-function pickVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
+function pickEnglishVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
   return (
     voices.find(v => v.name === 'Google US English') ||
     voices.find(v => /Microsoft.*Natural|Microsoft Aria|Microsoft Jenny|Microsoft Sonia/i.test(v.name)) ||
@@ -14,7 +15,18 @@ function pickVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null 
   );
 }
 
+function pickChineseVoice(voices: SpeechSynthesisVoice[]): SpeechSynthesisVoice | null {
+  return (
+    voices.find(v => v.lang === 'zh-CN' && /Google/i.test(v.name)) ||
+    voices.find(v => v.lang === 'zh-CN' && /Microsoft/i.test(v.name)) ||
+    voices.find(v => v.lang === 'zh-CN') ||
+    voices.find(v => v.lang.startsWith('zh')) ||
+    null
+  );
+}
+
 export function useNarrator() {
+  const lang = useLangStore(s => s.lang);
   const [muted, setMuted] = useState(() => localStorage.getItem(STORAGE_KEY_MUTED) === 'true');
   const [volume, setVolumeState] = useState(() => {
     const v = parseFloat(localStorage.getItem(STORAGE_KEY_VOLUME) || '1');
@@ -22,7 +34,6 @@ export function useNarrator() {
   });
   const mutedRef = useRef(muted);
   const volumeRef = useRef(volume);
-  // Cache selected voice so speak() needs zero lookup time
   const voiceRef = useRef<SpeechSynthesisVoice | null>(null);
 
   useEffect(() => { mutedRef.current = muted; }, [muted]);
@@ -55,17 +66,20 @@ export function useNarrator() {
     });
   }, []);
 
-  // Pre-load and cache voice; update whenever browser finishes loading voice list
+  // Pre-load and cache voice; re-pick when language changes
   useEffect(() => {
     if (!('speechSynthesis' in window)) return;
-    const update = () => { voiceRef.current = pickVoice(window.speechSynthesis.getVoices()); };
+    const update = () => {
+      const voices = window.speechSynthesis.getVoices();
+      voiceRef.current = lang === 'zh' ? pickChineseVoice(voices) : pickEnglishVoice(voices);
+    };
     update();
     window.speechSynthesis.addEventListener('voiceschanged', update);
     return () => {
       window.speechSynthesis.removeEventListener('voiceschanged', update);
       window.speechSynthesis.cancel();
     };
-  }, []);
+  }, [lang]);
 
   return { speak, muted, toggleMute, volume, setVolume };
 }

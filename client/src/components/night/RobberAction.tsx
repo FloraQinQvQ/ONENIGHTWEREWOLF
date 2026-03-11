@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { getSocket } from '../../socket';
 import PlayerAvatar from '../ui/PlayerAvatar';
+import { useT } from '../../i18n';
 import type { NightActionRequest } from 'shared';
 
 interface Props { request: NightActionRequest; currentUserId: string; }
 
 export default function RobberAction({ request, currentUserId: _ }: Props) {
+  const t = useT();
   const [pending, setPending] = useState<string | null>(null);
 
   const steal = (targetUserId: string) => {
@@ -19,8 +21,8 @@ export default function RobberAction({ request, currentUserId: _ }: Props) {
   return (
     <div className="text-center max-w-sm w-full">
       <div className="text-6xl mb-3">🗡️</div>
-      <h2 className="text-xl font-bold text-yellow-400 mb-2">You are the Robber!</h2>
-      <p className="text-gray-400 mb-4">Steal a player's card and see your new role (optional).</p>
+      <h2 className="text-xl font-bold text-yellow-400 mb-2">{t('na.robber.title')}</h2>
+      <p className="text-gray-400 mb-4">{t('na.robber.desc')}</p>
       <div className="space-y-3 mb-4">
         {request.players.map(p => (
           <button
@@ -31,7 +33,7 @@ export default function RobberAction({ request, currentUserId: _ }: Props) {
             }`}
           >
             <PlayerAvatar avatarUrl={p.avatarUrl} customAvatar={p.customAvatar} displayName={p.displayName} size={8} />
-            <span className="flex-1 text-left">Steal from {p.displayName}</span>
+            <span className="flex-1 text-left">{t('na.robber.stealFrom', { name: p.displayName })}</span>
             {pending === p.userId && <span className="text-yellow-400">✓</span>}
           </button>
         ))}
@@ -42,10 +44,10 @@ export default function RobberAction({ request, currentUserId: _ }: Props) {
         className="btn-primary w-full mb-2"
       >
         {pending
-          ? `Confirm — Steal from ${request.players.find(p => p.userId === pending)?.displayName}`
-          : 'Select a player to steal from'}
+          ? t('na.robber.confirmSteal', { name: request.players.find(p => p.userId === pending)?.displayName ?? '' })
+          : t('na.robber.selectPlayer')}
       </button>
-      <button onClick={skip} className="btn-ghost w-full">Don't steal</button>
+      <button onClick={skip} className="btn-ghost w-full">{t('na.robber.skip')}</button>
     </div>
   );
 }

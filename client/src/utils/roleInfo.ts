@@ -1,3 +1,4 @@
+import { useLangStore } from '../store/langStore';
 import type { RoleName, Team } from 'shared';
 
 export interface RoleInfo {
@@ -99,6 +100,48 @@ export const ROLE_INFO: Record<RoleName, RoleInfo> = {
     color: 'text-lime-400',
   },
 };
+
+export const ROLE_INFO_ZH: Record<RoleName, RoleInfo> = {
+  werewolf: { name: '狼人', emoji: '🐺', team: 'werewolf', color: 'text-red-400',
+    description: '你是狼人！和你的同伴合作，避免被淘汰。',
+    nightAction: '睁开眼睛，寻找你的狼人同伴。' },
+  minion: { name: '爪牙', emoji: '🦹', team: 'werewolf', color: 'text-orange-400',
+    description: '你为狼人服务。帮助他们存活——即使以自己的生命为代价。',
+    nightAction: '睁开眼睛，寻找狼人（他们不知道你是谁）。' },
+  mason: { name: '共济会员', emoji: '🔨', team: 'village', color: 'text-blue-400',
+    description: '你是共济会员。找到你的同伴，一起识破狼人。',
+    nightAction: '睁开眼睛，寻找你的共济会同伴。' },
+  seer: { name: '预言家', emoji: '🔮', team: 'village', color: 'text-purple-400',
+    description: '你能看穿谎言！查看另一位玩家的牌或两张中央牌。',
+    nightAction: '查看一名玩家的牌，或两张中央牌。' },
+  robber: { name: '强盗', emoji: '🗡️', team: 'village', color: 'text-yellow-400',
+    description: '偷取另一位玩家的角色并查看你得到了什么。',
+    nightAction: '把自己的牌和另一名玩家的牌交换，然后查看你的新角色。' },
+  troublemaker: { name: '捣蛋鬼', emoji: '😈', team: 'village', color: 'text-pink-400',
+    description: '交换其他两名玩家的牌，但不查看内容。',
+    nightAction: '交换其他两名玩家的牌（你不会看到是什么）。' },
+  drunk: { name: '酒鬼', emoji: '🍺', team: 'village', color: 'text-amber-400',
+    description: '你醉到把自己的牌和中央牌交换——但你不知道换了什么！',
+    nightAction: '把你的牌和一张中央牌交换（你不会看到新角色）。' },
+  insomniac: { name: '失眠者', emoji: '👁️', team: 'village', color: 'text-cyan-400',
+    description: '睡不着！你最后醒来，查看自己的最终牌。',
+    nightAction: '查看自己的牌，看看夜晚期间是否发生了变化。' },
+  hunter: { name: '猎人', emoji: '🏹', team: 'village', color: 'text-green-400',
+    description: '如果你被淘汰，你投票的玩家也会被淘汰。',
+    nightAction: '无夜晚行动。记住：你的投票有额外的威力！' },
+  tanner: { name: '皮匠', emoji: '💀', team: 'tanner', color: 'text-gray-400',
+    description: '你想被淘汰！被淘汰就获胜。你不关心其他任何人。',
+    nightAction: '无夜晚行动。在白天尽量让自己被淘汰！' },
+  villager: { name: '村民', emoji: '👨‍🌾', team: 'village', color: 'text-lime-400',
+    description: '你是普通村民。帮助找出并淘汰狼人！',
+    nightAction: '无夜晚行动。尽量保持清醒并观察！' },
+};
+
+/** Returns language-appropriate role info. Use this in components instead of ROLE_INFO directly. */
+export function useRoleInfo(): Record<RoleName, RoleInfo> {
+  const lang = useLangStore(s => s.lang);
+  return lang === 'zh' ? ROLE_INFO_ZH : ROLE_INFO;
+}
 
 export const ALL_ROLES: RoleName[] = [
   'werewolf', 'minion', 'mason', 'seer', 'robber',

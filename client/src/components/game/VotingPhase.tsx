@@ -3,7 +3,8 @@ import PlayerAvatar from '../ui/PlayerAvatar';
 import { getSocket } from '../../socket';
 import { useGameStore } from '../../store/gameStore';
 import { useRoomStore } from '../../store/roomStore';
-import { ROLE_INFO } from '../../utils/roleInfo';
+import { useRoleInfo } from '../../utils/roleInfo';
+import { useT } from '../../i18n';
 
 interface Props {
   currentUserId: string;
@@ -12,6 +13,8 @@ interface Props {
 export default function VotingPhase({ currentUserId }: Props) {
   const { voteCounts, myVote, setMyVote, notes, setNotes, playerNotes, playerTags } = useGameStore();
   const { room } = useRoomStore();
+  const roleInfo = useRoleInfo();
+  const t = useT();
   const [selected, setSelected] = useState<string | null>(null);
   const hasVoted = myVote !== null;
 
@@ -30,11 +33,11 @@ export default function VotingPhase({ currentUserId }: Props) {
     <div className="min-h-screen flex flex-col p-4 bg-night-950">
       <div className="text-center mb-6 pt-4">
         <div className="text-5xl mb-2">🗳️</div>
-        <h2 className="text-2xl font-bold text-white">Time to Vote!</h2>
+        <h2 className="text-2xl font-bold text-white">{t('phase.voting')}</h2>
         <p className="text-gray-400 text-sm mt-1">
-          {hasVoted ? 'Vote submitted. Waiting for others...' : 'Vote for who you think is a Werewolf'}
+          {hasVoted ? t('voteSubmitted') : t('voteSubtitle')}
         </p>
-        <p className="text-gray-500 text-xs mt-2">{votedCount} / {totalCount} voted</p>
+        <p className="text-gray-500 text-xs mt-2">{t('votedCount', { voted: votedCount, total: totalCount })}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
@@ -43,7 +46,7 @@ export default function VotingPhase({ currentUserId }: Props) {
           {/* Notepad on mobile only */}
           {notes.trim() && (
             <div className="card md:hidden">
-              <p className="text-xs text-gray-500 font-medium mb-2">📝 Your Notepad</p>
+              <p className="text-xs text-gray-500 font-medium mb-2">{t('yourNotepad')}</p>
               <textarea
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
@@ -73,14 +76,14 @@ export default function VotingPhase({ currentUserId }: Props) {
                       {(playerTags[p.userId]?.trust || (playerTags[p.userId]?.roles ?? []).length > 0) && (
                         <div className="flex items-center gap-1 flex-wrap mt-1">
                           {playerTags[p.userId]?.trust === 'good' && (
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30 font-medium">👍 trusted</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-green-500/20 text-green-400 border border-green-500/30 font-medium">{t('trust')}</span>
                           )}
                           {playerTags[p.userId]?.trust === 'bad' && (
-                            <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30 font-medium">🚩 sus</span>
+                            <span className="text-xs px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 border border-red-500/30 font-medium">{t('sus')}</span>
                           )}
                           {(playerTags[p.userId]?.roles ?? []).map(r => (
                             <span key={r} className="text-xs px-1.5 py-0.5 rounded bg-night-700 border border-white/10 text-gray-300">
-                              {ROLE_INFO[r].emoji} {ROLE_INFO[r].name}
+                              {roleInfo[r].emoji} {roleInfo[r].name}
                             </span>
                           ))}
                         </div>
@@ -99,13 +102,15 @@ export default function VotingPhase({ currentUserId }: Props) {
                 disabled={!selected}
                 className="btn-danger w-full py-4 text-lg"
               >
-                Cast Vote {selected ? `for ${room?.players.find(p => p.userId === selected)?.displayName}` : ''}
+                {selected
+                  ? t('castVoteFor', { name: room?.players.find(p => p.userId === selected)?.displayName ?? '' })
+                  : t('castVote')}
               </button>
             </>
           ) : (
             <div className="flex flex-col items-center py-8">
               <p className="text-gray-400 text-lg mb-6">
-                You voted for <span className="text-moon-400 font-bold">
+                {t('youVotedFor')} <span className="text-moon-400 font-bold">
                   {room?.players.find(p => p.userId === myVote)?.displayName}
                 </span>
               </p>
@@ -127,7 +132,7 @@ export default function VotingPhase({ currentUserId }: Props) {
               ) : (
                 <>
                   <div className="text-6xl mb-4 animate-pulse">⏳</div>
-                  <p className="text-gray-600 text-sm">Results revealed when everyone votes</p>
+                  <p className="text-gray-600 text-sm">{t('resultsWhenAll')}</p>
                 </>
               )}
             </div>
@@ -138,7 +143,7 @@ export default function VotingPhase({ currentUserId }: Props) {
         {notes.trim() && (
           <div className="hidden md:block sticky top-4">
             <div className="card">
-              <p className="text-xs text-gray-500 font-medium mb-2">📝 Your Notepad</p>
+              <p className="text-xs text-gray-500 font-medium mb-2">{t('yourNotepad')}</p>
               <textarea
                 value={notes}
                 onChange={e => setNotes(e.target.value)}

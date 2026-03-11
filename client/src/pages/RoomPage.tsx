@@ -4,6 +4,8 @@ import { getSocket, connectSocket } from '../socket';
 import { useAuthStore } from '../store/authStore';
 import { useRoomStore } from '../store/roomStore';
 import { useGameStore } from '../store/gameStore';
+import { useLangStore } from '../store/langStore';
+import { useT } from '../i18n';
 import RoleSelector from '../components/room/RoleSelector';
 import PlayerList from '../components/room/PlayerList';
 import type { RoomState, RoleName } from 'shared';
@@ -27,6 +29,8 @@ export default function RoomPage() {
   const [copied, setCopied] = useState(false);
   const { room, error, setRoom, setError } = useRoomStore();
   const { setPhase, setNightOrder, setMyRole } = useGameStore();
+  const { lang, setLang } = useLangStore();
+  const t = useT();
 
   const setupSocket = useCallback(() => {
     const socket = connectSocket();
@@ -67,7 +71,11 @@ export default function RoomPage() {
   const requiredRoles = playerCount + 3;
   const selectedRoles = room?.settings.roles ?? [];
   const hasWerewolf = selectedRoles.includes('werewolf');
-  const canStart = isHost && playerCount >= MIN_PLAYERS && selectedRoles.length === requiredRoles && hasWerewolf;
+  const myPlayer = room?.players.find(p => p.userId === user?.userId);
+  const iAmReady = myPlayer?.isReady ?? false;
+  const allNonHostReady = (room?.players ?? []).filter(p => !p.isHost).every(p => p.isReady);
+  const rolesOk = selectedRoles.length === requiredRoles && hasWerewolf;
+  const canStart = isHost && playerCount >= MIN_PLAYERS && rolesOk && allNonHostReady;
 
   const copyUrl = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -95,7 +103,7 @@ export default function RoomPage() {
       <div className="min-h-screen flex flex-col items-center justify-center p-4">
         <div className="card text-center max-w-sm">
           <p className="text-red-400 mb-4">{error}</p>
-          <button onClick={() => navigate('/')} className="btn-primary">Back to Lobby</button>
+          <button onClick={() => navigate('/')} className="btn-primary">{t('back')}</button>
         </div>
       </div>
     );
@@ -105,36 +113,43 @@ export default function RoomPage() {
     return <div className="min-h-screen flex items-center justify-center text-gray-400">Connecting...</div>;
   }
 
+  const timerLabel = (secs: number) => secs === 0 ? t('noLimit') : `${Math.floor(secs / 60)} min`;
+
   return (
     <div className="min-h-screen flex flex-col p-4 max-w-2xl mx-auto">
       <header className="flex items-center justify-between mb-6">
-        <button onClick={() => navigate('/')} className="text-gray-400 hover:text-white">← Back</button>
+        <button onClick={() => navigate('/')} className="text-gray-400 hover:text-white">{t('back')}</button>
         <div className="text-center">
-          <p className="text-sm text-gray-500">Room Code</p>
+          <p className="text-sm text-gray-500">{t('roomCode')}</p>
           <p className="text-2xl font-mono font-bold text-moon-400 tracking-widest">{room.code}</p>
           <button
             onClick={copyUrl}
             className="text-xs text-gray-500 hover:text-gray-300 mt-1 transition-colors"
           >
-            {copied ? '✓ Copied!' : '🔗 Copy invite link'}
+            {copied ? t('copied') : t('copyLink')}
           </button>
         </div>
-        <div className="w-16" />
+        <button
+          onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
+          className="text-xs text-gray-400 hover:text-gray-200 border border-white/10 rounded px-2 py-1 transition-colors w-16 text-center"
+        >
+          {lang === 'zh' ? 'EN' : '中文'}
+        </button>
       </header>
 
       <div className="flex-1 flex flex-col gap-4">
         <div className="card">
-          <h2 className="font-bold text-lg mb-3">Players ({playerCount}/10)</h2>
-          <PlayerList players={room.players} currentUserId={user?.userId || ''} />
+          <h2 className="font-bold text-lg mb-3">{t('players')} ({playerCount}/10)</h2>
+          <PlayerList players={room.players} currentUserId={user?.userId || ''} showReadyState />
           {playerCount < MIN_PLAYERS && (
-            <p className="mt-3 text-sm text-yellow-500">Need at least {MIN_PLAYERS} players to start</p>
+            <p className="mt-3 text-sm text-yellow-500">{t('needPlayers', { n: MIN_PLAYERS })}</p>
           )}
         </div>
 
         <div className="card">
-          <h2 className="font-bold text-lg mb-3">Game Settings</h2>
+          <h2 className="font-bold text-lg mb-3">{t('gameSettings')}</h2>
           <div className="flex items-center justify-between">
-            <label className="text-sm text-gray-400">Discussion timer</label>
+            <label className="text-sm text-gray-400">{t('discussionTimer')}</label>
             <div className="flex items-center gap-2">
               {isHost ? (
                 <select
@@ -150,11 +165,11 @@ export default function RoomPage() {
                   <option value={300}>5 min</option>
                   <option value={480}>8 min</option>
                   <option value={600}>10 min</option>
-                  <option value={0}>No limit</option>
+                  <option value={0}>{t('noLimit')}</option>
                 </select>
               ) : (
                 <span className="text-sm text-white">
-                  {(room?.settings.dayTimerSeconds ?? 300) === 0 ? 'No limit' : `${Math.floor((room?.settings.dayTimerSeconds ?? 300) / 60)} min`}
+                  {timerLabel(room?.settings.dayTimerSeconds ?? 300)}
                 </span>
               )}
             </div>
@@ -163,19 +178,18 @@ export default function RoomPage() {
 
         <div className="card">
           <div className="flex items-center justify-between mb-1">
-            <h2 className="font-bold text-lg">Role Setup</h2>
+            <h2 className="font-bold text-lg">{t('roleSetup')}</h2>
             {isHost && (
               <button
                 onClick={suggestRoles}
                 className="text-xs text-moon-400 hover:text-moon-300 border border-moon-500/40 hover:border-moon-400/60 rounded-lg px-2 py-1 transition-colors"
               >
-                ✨ Suggest
+                {t('suggest')}
               </button>
             )}
           </div>
           <p className="text-sm text-gray-400 mb-3">
-            Select exactly <span className="text-moon-400 font-bold">{requiredRoles}</span> roles
-            ({playerCount} players + 3 center cards)
+            {t('selectExactly', { n: requiredRoles, p: playerCount })}
           </p>
           <RoleSelector
             selected={selectedRoles as any}
@@ -193,18 +207,30 @@ export default function RoomPage() {
           >
             {!canStart
               ? selectedRoles.length < requiredRoles
-                ? `Select ${requiredRoles - selectedRoles.length} more role(s)`
+                ? t('selectMore', { n: requiredRoles - selectedRoles.length })
                 : selectedRoles.length > requiredRoles
-                  ? `Remove ${selectedRoles.length - requiredRoles} role(s)`
+                  ? t('removeRoles', { n: selectedRoles.length - requiredRoles })
                   : !hasWerewolf
-                    ? 'Add at least one Werewolf'
-                    : 'Need more players'
-              : 'Start Game'}
+                    ? t('addWerewolf')
+                    : playerCount < MIN_PLAYERS
+                      ? t('needMorePlayers')
+                      : t('waitingReady')
+              : t('startGame')}
           </button>
         )}
         {!isHost && (
-          <div className="text-center text-gray-500 py-4">
-            Waiting for the host to start the game...
+          <div className="flex flex-col items-center gap-3 py-2">
+            <button
+              onClick={() => getSocket().emit('room:set_ready', { ready: !iAmReady })}
+              className={`w-full py-3 text-base font-semibold rounded-xl border transition-all ${
+                iAmReady
+                  ? 'bg-green-500/20 border-green-500/60 text-green-400 hover:bg-green-500/30'
+                  : 'bg-night-700 border-white/20 text-gray-300 hover:border-white/40 hover:text-white'
+              }`}
+            >
+              {iAmReady ? `✓ ${t('imReady')}` : t('imReady')}
+            </button>
+            <p className="text-sm text-gray-500">{t('waitingForHost')}</p>
           </div>
         )}
       </div>

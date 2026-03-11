@@ -6,8 +6,12 @@ import { assignRoles, computeNightOrder } from '../../game/RoleAssigner';
 import { startNightStep } from './gameHandlers';
 import type { RoomState, RoomSettings, PublicPlayer } from 'shared';
 
-function buildPublicPlayers(roomId: string, hostId: string, game?: ReturnType<typeof getGame>): PublicPlayer[] {
+// In-memory lobby ready state: roomCode → Set of ready userIds
+const lobbyReady = new Map<string, Set<string>>();
+
+function buildPublicPlayers(roomId: string, hostId: string, roomCode: string, game?: ReturnType<typeof getGame>): PublicPlayer[] {
   const memberIds = getRoomMembers(roomId);
+  const readySet = lobbyReady.get(roomCode) ?? new Set();
   return memberIds.map(uid => {
     const u = getUserById(uid);
     const gs = game?.players.get(uid);
@@ -17,7 +21,7 @@ function buildPublicPlayers(roomId: string, hostId: string, game?: ReturnType<ty
       avatarUrl: u?.avatar_url || null,
       customAvatar: u?.custom_avatar || null,
       isHost: uid === hostId,
-      isReady: gs?.isReady ?? false,
+      isReady: gs ? gs.isReady : readySet.has(uid),
       hasVoted: gs ? gs.vote !== null : false,
     };
   });
@@ -27,7 +31,7 @@ export function emitRoomState(io: Server, roomCode: string) {
   const room = getRoomByCode(roomCode);
   if (!room) return;
   const game = getGame(roomCode);
-  const players = buildPublicPlayers(room.id, room.host_id, game);
+  const players = buildPublicPlayers(room.id, room.host_id, roomCode, game);
   const settings: RoomSettings = JSON.parse(room.settings);
   const state: RoomState = {
     roomId: room.id,
@@ -102,12 +106,24 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
     emitRoomState(io, code);
   });
 
+  socket.on('room:set_ready', ({ ready }: { ready: boolean }) => {
+    const code: string | undefined = socket.data.roomCode;
+    if (!code) return;
+    const room = getRoomByCode(code);
+    if (!room || room.status !== 'waiting') return;
+    if (!lobbyReady.has(code)) lobbyReady.set(code, new Set());
+    if (ready) lobbyReady.get(code)!.add(userId);
+    else lobbyReady.get(code)!.delete(userId);
+    emitRoomState(io, code);
+  });
+
   socket.on('room:leave', () => {
     const code: string | undefined = socket.data.roomCode;
     if (!code) return;
     const room = getRoomByCode(code);
     if (room && room.status === 'waiting') {
       removeMember(room.id, userId);
+      lobbyReady.get(code)?.delete(userId);
     }
     socket.leave(code);
     socket.data.roomCode = undefined;
@@ -145,6 +161,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
       return;
     }
 
+    lobbyReady.delete(code); // clear lobby ready state when game begins
     const { playerRoles, centerCards } = assignRoles(memberIds, settings.roles);
     // Use ALL configured roles for night order so center card roles also fake-act
     const nightOrder = computeNightOrder(settings.roles);
@@ -210,6 +227,7 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
 
     if (room.status === 'waiting') {
       removeMember(room.id, userId);
+      lobbyReady.get(code)?.delete(userId);
       emitRoomState(io, code);
     }
     // Mid-game disconnect: keep player in game, they can reconnect

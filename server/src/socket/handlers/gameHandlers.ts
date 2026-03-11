@@ -115,10 +115,20 @@ export function startNightStep(io: Server, roomCode: string) {
     for (const ps of activePlayers) {
       if (!ps.hasActedThisStep) {
         ps.hasActedThisStep = true;
-        // Drunk MUST swap — force a random center card if they didn't act in time
-        const autoAction = ps.originalRole === 'drunk'
-          ? { type: 'drunk:take_center' as const, centerIndex: (Math.floor(Math.random() * 3)) as 0 | 1 | 2 }
-          : { type: 'no_action' as const };
+        // Auto-submit the appropriate action so information-gathering roles still see their result
+        const role = ps.originalRole;
+        const autoAction =
+          role === 'drunk'
+            ? { type: 'drunk:take_center' as const, centerIndex: (Math.floor(Math.random() * 3)) as 0 | 1 | 2 }
+            : role === 'werewolf'
+            ? { type: 'werewolf:view' as const }
+            : role === 'minion'
+            ? { type: 'minion:view' as const }
+            : role === 'mason'
+            ? { type: 'mason:view' as const }
+            : role === 'insomniac'
+            ? { type: 'insomniac:view' as const }
+            : { type: 'no_action' as const };
         const result = processNightAction(state, ps.userId, autoAction);
         ps.nightResult = result;
         const sock = io.sockets.sockets.get(ps.socketId);

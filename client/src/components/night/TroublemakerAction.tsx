@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import PlayerAvatar from '../ui/PlayerAvatar';
 import { getSocket } from '../../socket';
+import { useT } from '../../i18n';
 import type { NightActionRequest } from 'shared';
 
 interface Props { request: NightActionRequest; currentUserId: string; }
 
 export default function TroublemakerAction({ request, currentUserId: _ }: Props) {
+  const t = useT();
   const [selected, setSelected] = useState<string[]>([]);
 
   const toggle = (id: string) => {
@@ -28,9 +30,9 @@ export default function TroublemakerAction({ request, currentUserId: _ }: Props)
   return (
     <div className="text-center max-w-sm w-full">
       <div className="text-6xl mb-3">😈</div>
-      <h2 className="text-xl font-bold text-pink-400 mb-2">You are the Troublemaker!</h2>
-      <p className="text-gray-400 mb-1">Swap two other players' cards (optional).</p>
-      <p className="text-sm text-gray-500 mb-4">{selected.length}/2 selected</p>
+      <h2 className="text-xl font-bold text-pink-400 mb-2">{t('na.troublemaker.title')}</h2>
+      <p className="text-gray-400 mb-1">{t('na.troublemaker.desc')}</p>
+      <p className="text-sm text-gray-500 mb-4">{t('na.troublemaker.selected', { n: selected.length })}</p>
       <div className="space-y-3 mb-4">
         {request.players.map(p => (
           <button
@@ -45,9 +47,9 @@ export default function TroublemakerAction({ request, currentUserId: _ }: Props)
         ))}
       </div>
       <button onClick={submit} disabled={selected.length !== 2} className="btn-primary w-full mb-2">
-        Swap Cards
+        {t('na.troublemaker.swap')}
       </button>
-      <button onClick={skip} className="btn-ghost w-full">Don't swap</button>
+      <button onClick={skip} className="btn-ghost w-full">{t('na.troublemaker.skip')}</button>
     </div>
   );
 }

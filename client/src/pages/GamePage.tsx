@@ -11,7 +11,8 @@ import ResultsCard from '../components/results/ResultsCard';
 import RoleCard from '../components/game/RoleCard';
 import { useNarrator } from '../hooks/useNarrator';
 import { ROLE_INFO } from '../utils/roleInfo';
-import { ROLE_WAKE_SCRIPT, ROLE_WAIT_SCRIPT, narrateNightResult, narrateResult } from '../utils/narratorScript';
+import { ROLE_WAKE_SCRIPT, ROLE_WAKE_SCRIPT_ZH, ROLE_WAIT_SCRIPT, ROLE_WAIT_SCRIPT_ZH, narrateNightResult, narrateResult } from '../utils/narratorScript';
+import { useLangStore } from '../store/langStore';
 import type { RoomState, NightActionRequest, NightActionResult, GameResults, RoleName, GamePhase } from 'shared';
 
 export default function GamePage() {
@@ -32,6 +33,9 @@ export default function GamePage() {
   } = useGameStore();
 
   const { speak, muted, toggleMute, volume, setVolume } = useNarrator();
+  const { lang, setLang } = useLangStore();
+  const wakeScript = lang === 'zh' ? ROLE_WAKE_SCRIPT_ZH : ROLE_WAKE_SCRIPT;
+  const waitScript = lang === 'zh' ? ROLE_WAIT_SCRIPT_ZH : ROLE_WAIT_SCRIPT;
 
   const setupSocket = useCallback(() => {
     const socket = connectSocket();
@@ -68,7 +72,9 @@ export default function GamePage() {
       setMyRole(role, otherPlayers);
       setPhase('role_reveal');
       const info = ROLE_INFO[role];
-      speak(`You are the ${info.name}. ${info.description}`);
+      speak(lang === 'zh'
+        ? `你是${info.name}。${info.description}`
+        : `You are the ${info.name}. ${info.description}`);
     });
 
     socket.on('game:starting', ({ phase: p, nightOrder }: { phase: string; nightOrder: RoleName[] }) => {
@@ -86,20 +92,20 @@ export default function GamePage() {
       setCurrentNightRole(req.role);
       setNightActionRequest(req);
       setNightActionResult(null);
-      speak(ROLE_WAKE_SCRIPT[req.role]);
+      speak(wakeScript[req.role]);
     });
 
     socket.on('game:night_waiting', ({ currentRole }: { currentRole: RoleName }) => {
       setCurrentNightRole(currentRole);
       setNightActionRequest(null);
-      const script = ROLE_WAIT_SCRIPT[currentRole];
+      const script = waitScript[currentRole];
       if (script) speak(script);
     });
 
     socket.on('game:night_action_ack', ({ result }: { result: NightActionResult }) => {
       setNightActionResult(result);
       setNightActionRequest(null);
-      speak(narrateNightResult(result));
+      speak(narrateNightResult(result, lang));
     });
 
     socket.on('game:night_phase_end', () => {
@@ -112,9 +118,13 @@ export default function GamePage() {
       setDayTimer(timerSeconds);
       if (timerSeconds > 0) {
         const mins = Math.round(timerSeconds / 60);
-        speak(`Everyone wake up! The sun is rising. Discuss and find the werewolves. You have ${mins} minute${mins !== 1 ? 's' : ''}.`);
+        speak(lang === 'zh'
+          ? `所有人醒来！太阳升起了。讨论并找出狼人，你们有${mins}分钟。`
+          : `Everyone wake up! The sun is rising. Discuss and find the werewolves. You have ${mins} minute${mins !== 1 ? 's' : ''}.`);
       } else {
-        speak("Everyone wake up! The sun is rising. Discuss and find the werewolves.");
+        speak(lang === 'zh'
+          ? '所有人醒来！太阳升起了。讨论并找出狼人。'
+          : "Everyone wake up! The sun is rising. Discuss and find the werewolves.");
       }
     });
 
@@ -133,7 +143,7 @@ export default function GamePage() {
 
     socket.on('game:results', (results: GameResults) => {
       setResults(results);
-      speak(narrateResult(results, user?.userId || ''));
+      speak(narrateResult(results, user?.userId || '', lang));
     });
 
     socket.emit('room:join', { roomCode: code });
@@ -168,6 +178,13 @@ export default function GamePage() {
 
   const MuteButton = (
     <div className="fixed bottom-5 right-5 z-50 flex items-center gap-2 bg-night-800 border border-white/10 rounded-full px-3 py-2 shadow-lg">
+      <button
+        onClick={() => setLang(lang === 'zh' ? 'en' : 'zh')}
+        title="Switch language / 切换语言"
+        className="text-sm font-bold text-gray-400 hover:text-white transition-colors px-1 border-r border-white/10 pr-2 mr-1"
+      >
+        {lang === 'zh' ? 'EN' : '中文'}
+      </button>
       <button
         onClick={toggleMute}
         title={muted ? 'Unmute narrator' : 'Mute narrator'}

@@ -1,6 +1,7 @@
 import { useGameStore } from '../../store/gameStore';
 import PlayerAvatar from '../ui/PlayerAvatar';
-import { ROLE_INFO, teamColor, teamLabel } from '../../utils/roleInfo';
+import { useRoleInfo, teamColor } from '../../utils/roleInfo';
+import { useT } from '../../i18n';
 import type { RoleName } from 'shared';
 
 interface Props {
@@ -10,10 +11,16 @@ interface Props {
 
 export default function ResultsCard({ onLeave, currentUserId }: Props) {
   const { results } = useGameStore();
+  const roleInfo = useRoleInfo();
+  const t = useT();
   if (!results) return null;
 
   const isWinner = results.winners.includes(currentUserId);
   const killed = results.killed;
+
+  const teamName = results.winTeam === 'village' ? t('village')
+    : results.winTeam === 'werewolf' ? t('werewolf')
+    : t('tanner');
 
   return (
     <div className="min-h-screen flex flex-col p-4 max-w-lg mx-auto">
@@ -23,10 +30,10 @@ export default function ResultsCard({ onLeave, currentUserId }: Props) {
       }`}>
         <div className="text-6xl mb-2">{isWinner ? '🏆' : '💀'}</div>
         <h2 className={`text-3xl font-bold mb-1 ${isWinner ? 'text-green-400' : 'text-red-400'}`}>
-          {isWinner ? 'You Won!' : 'You Lost!'}
+          {isWinner ? t('youWon') : t('youLost')}
         </h2>
         <div className={`text-lg font-semibold mb-2 ${teamColor(results.winTeam)}`}>
-          {teamLabel(results.winTeam)} Team Wins
+          {t('teamWins', { team: teamName })}
         </div>
         <p className="text-gray-400 text-sm px-4">{results.reason}</p>
       </div>
@@ -34,7 +41,7 @@ export default function ResultsCard({ onLeave, currentUserId }: Props) {
       {/* Killed players */}
       {killed.length > 0 && (
         <div className="card mb-4">
-          <h3 className="font-bold text-red-400 mb-2">☠️ Eliminated</h3>
+          <h3 className="font-bold text-red-400 mb-2">{t('eliminated')}</h3>
           {killed.map(uid => {
             const p = results.players.find(x => x.userId === uid);
             return p ? (
@@ -47,19 +54,19 @@ export default function ResultsCard({ onLeave, currentUserId }: Props) {
         </div>
       )}
       {killed.length === 0 && (
-        <div className="card mb-4 text-center text-gray-400">No one was eliminated!</div>
+        <div className="card mb-4 text-center text-gray-400">{t('noOneEliminated')}</div>
       )}
 
       {/* Role reveal */}
       <div className="card mb-4">
-        <h3 className="font-bold mb-3">Final Roles</h3>
+        <h3 className="font-bold mb-3">{t('finalRoles')}</h3>
         <div className="space-y-2">
           {results.players.map(p => {
             const original = results.originalRoles[p.userId] as RoleName;
             const final = results.finalRoles[p.userId] as RoleName;
             const changed = original !== final;
-            const origInfo = ROLE_INFO[original];
-            const finalInfo = ROLE_INFO[final];
+            const origInfo = roleInfo[original];
+            const finalInfo = roleInfo[final];
             const isMe = p.userId === currentUserId;
             return (
               <div key={p.userId} className={`flex items-start gap-3 p-2 rounded-lg ${isMe ? 'bg-white/5' : ''}`}>
@@ -67,7 +74,7 @@ export default function ResultsCard({ onLeave, currentUserId }: Props) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1">
                     <span className="font-semibold text-sm truncate">{p.displayName}</span>
-                    {isMe && <span className="text-xs text-gray-500">(you)</span>}
+                    {isMe && <span className="text-xs text-gray-500">{t('you')}</span>}
                     {results.winners.includes(p.userId) && <span className="text-xs text-yellow-400">🏆</span>}
                   </div>
                   <div className="flex items-center gap-2 text-sm mt-0.5">
@@ -88,10 +95,10 @@ export default function ResultsCard({ onLeave, currentUserId }: Props) {
 
       {/* Center cards */}
       <div className="card mb-4">
-        <h3 className="font-bold mb-2">Center Cards</h3>
+        <h3 className="font-bold mb-2">{t('centerCards2')}</h3>
         <div className="grid grid-cols-3 gap-2">
           {results.centerCards.map((role, i) => {
-            const info = ROLE_INFO[role as RoleName];
+            const info = roleInfo[role as RoleName];
             return (
               <div key={i} className="bg-night-700 rounded-lg p-3 text-center">
                 <div className="text-xl">{info.emoji}</div>
@@ -104,7 +111,7 @@ export default function ResultsCard({ onLeave, currentUserId }: Props) {
 
       {/* Vote breakdown */}
       <div className="card mb-6">
-        <h3 className="font-bold mb-2">Votes</h3>
+        <h3 className="font-bold mb-2">{t('votes')}</h3>
         <div className="space-y-1">
           {Object.entries(results.votes).map(([voterId, targetId]) => {
             if (!targetId) return null;
@@ -112,9 +119,7 @@ export default function ResultsCard({ onLeave, currentUserId }: Props) {
             const target = results.players.find(p => p.userId === targetId);
             return voter && target ? (
               <div key={voterId} className="text-sm text-gray-400">
-                <span className="text-gray-200">{voter.displayName}</span>
-                {' voted for '}
-                <span className="text-gray-200">{target.displayName}</span>
+                {t('votedFor', { voter: voter.displayName, target: target.displayName })}
               </div>
             ) : null;
           })}
@@ -122,7 +127,7 @@ export default function ResultsCard({ onLeave, currentUserId }: Props) {
       </div>
 
       <button onClick={onLeave} className="btn-primary w-full py-4 text-lg">
-        Play Again
+        {t('playAgain')}
       </button>
     </div>
   );
