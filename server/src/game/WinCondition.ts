@@ -59,10 +59,12 @@ export function evaluateWinConditions(
     reason = 'A Werewolf was executed — Village wins!';
   } else if (noWerewolvesInGame) {
     if (executed.length === 0) {
-      // No werewolves, no one killed → werewolf team (which is minion only) wins
-      winTeam = 'werewolf';
-      winners = minion ? [minion.userId] : [];
-      reason = 'No Werewolves existed and no one was killed — Werewolf team wins!';
+      // No werewolves, no one killed → village wins (they correctly avoided killing innocents)
+      winTeam = 'village';
+      winners = players
+        .filter(p => p.currentRole !== 'werewolf' && p.currentRole !== 'minion' && p.currentRole !== 'tanner')
+        .map(p => p.userId);
+      reason = 'No Werewolves existed and no one was killed — Village wins!';
     } else if (minion && executed.includes(minion.userId)) {
       winTeam = 'village';
       winners = players

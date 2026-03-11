@@ -66,7 +66,8 @@ export default function RoomPage() {
   const playerCount = room?.players.length ?? 0;
   const requiredRoles = playerCount + 3;
   const selectedRoles = room?.settings.roles ?? [];
-  const canStart = isHost && playerCount >= MIN_PLAYERS && selectedRoles.length === requiredRoles;
+  const hasWerewolf = selectedRoles.includes('werewolf');
+  const canStart = isHost && playerCount >= MIN_PLAYERS && selectedRoles.length === requiredRoles && hasWerewolf;
 
   const copyUrl = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -195,7 +196,9 @@ export default function RoomPage() {
                 ? `Select ${requiredRoles - selectedRoles.length} more role(s)`
                 : selectedRoles.length > requiredRoles
                   ? `Remove ${selectedRoles.length - requiredRoles} role(s)`
-                  : 'Need more players'
+                  : !hasWerewolf
+                    ? 'Add at least one Werewolf'
+                    : 'Need more players'
               : 'Start Game'}
           </button>
         )}

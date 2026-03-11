@@ -219,7 +219,11 @@ function ResultPanel({ currentUserId: _u }: { currentUserId: string }) {
           <p className="text-amber-400">You swapped your card with a center card. You have no idea what you are now!</p>
         )}
         {nightActionResult.role === 'troublemaker' && (
-          <p className="text-pink-400">You swapped two players' cards. Chaos ensured!</p>
+          <p className="text-pink-400">
+            {nightActionResult.swappedPlayers && nightActionResult.swappedPlayers.length === 2
+              ? `Swapped ${nightActionResult.swappedPlayers[0].displayName}'s and ${nightActionResult.swappedPlayers[1].displayName}'s cards!`
+              : 'You swapped two players\' cards. Chaos ensued!'}
+          </p>
         )}
       </div>
 

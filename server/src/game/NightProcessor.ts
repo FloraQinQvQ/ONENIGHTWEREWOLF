@@ -71,7 +71,13 @@ export function processNightAction(
       const temp = a.currentRole;
       a.currentRole = b.currentRole;
       b.currentRole = temp;
-      return { role: 'troublemaker' };
+      return {
+        role: 'troublemaker',
+        swappedPlayers: [
+          { userId: a.userId, displayName: a.displayName },
+          { userId: b.userId, displayName: b.displayName },
+        ],
+      };
     }
 
     case 'drunk:take_center': {

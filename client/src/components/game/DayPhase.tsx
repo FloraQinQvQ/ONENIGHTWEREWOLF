@@ -300,7 +300,10 @@ function NightSummary({ result }: { result: NightActionResult }) {
     if (result.newRole)
       lines.push(`Stole from ${result.stolenFrom} — now ${ROLE_INFO[result.newRole].emoji} ${ROLE_INFO[result.newRole].name}`);
   } else if (result.role === 'troublemaker') {
-    lines.push('Swapped two players\' cards.');
+    if (result.swappedPlayers && result.swappedPlayers.length === 2)
+      lines.push(`Swapped ${result.swappedPlayers[0].displayName}'s and ${result.swappedPlayers[1].displayName}'s cards.`);
+    else
+      lines.push('Swapped two players\' cards.');
   } else if (result.role === 'drunk') {
     lines.push('Swapped your card with a center card. You don\'t know your new role!');
   } else if (result.role === 'insomniac') {

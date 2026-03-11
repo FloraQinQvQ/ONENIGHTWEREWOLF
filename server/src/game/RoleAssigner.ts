@@ -22,6 +22,22 @@ export function assignRoles(
   const centerCards = shuffled.slice(0, 3) as [RoleName, RoleName, RoleName];
   const playerRoles = new Map<string, RoleName>();
   playerIds.forEach((id, i) => playerRoles.set(id, shuffled[3 + i]));
+
+  // Guarantee at least one werewolf is assigned to a player.
+  // If all werewolves landed in the center, swap one center werewolf
+  // with a random non-werewolf player card.
+  const playerHasWerewolf = [...playerRoles.values()].some(r => r === 'werewolf');
+  if (!playerHasWerewolf) {
+    const centerWolfIndex = centerCards.findIndex(r => r === 'werewolf');
+    if (centerWolfIndex !== -1) {
+      const playerIds2 = [...playerRoles.keys()];
+      const swapTarget = playerIds2[Math.floor(Math.random() * playerIds2.length)];
+      const swappedRole = playerRoles.get(swapTarget)!;
+      playerRoles.set(swapTarget, 'werewolf');
+      centerCards[centerWolfIndex] = swappedRole;
+    }
+  }
+
   return { playerRoles, centerCards };
 }
 

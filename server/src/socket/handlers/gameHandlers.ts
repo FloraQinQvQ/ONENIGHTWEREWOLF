@@ -77,9 +77,15 @@ export function startNightStep(io: Server, roomCode: string) {
   for (const ps of activePlayers) {
     const sock = io.sockets.sockets.get(ps.socketId);
     if (sock) {
+      // For werewolves, only send fellow werewolves (not all players)
+      const requestPlayers = currentRole === 'werewolf'
+        ? [...state.players.values()]
+            .filter(p => p.currentRole === 'werewolf' && p.userId !== ps.userId)
+            .map(p => ({ userId: p.userId, displayName: p.displayName, avatarUrl: p.avatarUrl, customAvatar: p.customAvatar }))
+        : otherPlayers.filter(p => p.userId !== ps.userId);
       sock.emit('game:night_action_request', {
         role: currentRole,
-        players: otherPlayers.filter(p => p.userId !== ps.userId),
+        players: requestPlayers,
         isLoneWolf: currentRole === 'werewolf' && werewolfCount === 1,
       });
     }
@@ -94,10 +100,13 @@ export function startNightStep(io: Server, roomCode: string) {
     }
   }
 
-  // Auto-advance if no one has this role
+  // This role is a center card — fake the action with a random pause so players can't tell
   if (activePlayers.length === 0) {
-    state.currentNightRoleIndex++;
-    startNightStep(io, roomCode);
+    const fakeDelay = (6 + Math.random() * 7) * 1000; // 6–13 seconds random
+    setTimeout(() => {
+      state.currentNightRoleIndex++;
+      startNightStep(io, roomCode);
+    }, fakeDelay);
     return;
   }
 
@@ -106,8 +115,11 @@ export function startNightStep(io: Server, roomCode: string) {
     for (const ps of activePlayers) {
       if (!ps.hasActedThisStep) {
         ps.hasActedThisStep = true;
-        // Process a no-op
-        const result = processNightAction(state, ps.userId, { type: 'no_action' });
+        // Drunk MUST swap — force a random center card if they didn't act in time
+        const autoAction = ps.originalRole === 'drunk'
+          ? { type: 'drunk:take_center' as const, centerIndex: (Math.floor(Math.random() * 3)) as 0 | 1 | 2 }
+          : { type: 'no_action' as const };
+        const result = processNightAction(state, ps.userId, autoAction);
         ps.nightResult = result;
         const sock = io.sockets.sockets.get(ps.socketId);
         if (sock) sock.emit('game:night_action_ack', { result });

@@ -68,6 +68,7 @@ export interface NightActionResult {
   newRole?: RoleName;
   stolenFrom?: string;
   currentRole?: RoleName;
+  swappedPlayers?: Array<{ userId: string; displayName: string }>;
 }
 
 export interface GameResults {

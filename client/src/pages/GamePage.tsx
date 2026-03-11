@@ -64,6 +64,7 @@ export default function GamePage() {
     });
 
     socket.on('game:role_assigned', ({ role, otherPlayers }: { role: RoleName; otherPlayers: Array<{ userId: string; displayName: string; avatarUrl: string | null }> }) => {
+      reset(); // Clear all stale state from any previous game
       setMyRole(role, otherPlayers);
       setPhase('role_reveal');
       const info = ROLE_INFO[role];

@@ -140,10 +140,14 @@ export function registerRoomHandlers(io: Server, socket: Socket) {
       socket.emit('room:error', { message: `Select exactly ${playerCount + 3} roles (${playerCount} players + 3 center cards)` });
       return;
     }
+    if (!settings.roles.includes('werewolf')) {
+      socket.emit('room:error', { message: 'At least one Werewolf must be included in the role pool' });
+      return;
+    }
 
     const { playerRoles, centerCards } = assignRoles(memberIds, settings.roles);
-    const allRoles = [...playerRoles.values()];
-    const nightOrder = computeNightOrder(allRoles);
+    // Use ALL configured roles for night order so center card roles also fake-act
+    const nightOrder = computeNightOrder(settings.roles);
 
     const players = new Map(memberIds.map(uid => {
       const u = getUserById(uid)!;
